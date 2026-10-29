@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>NotchFlow</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>CFBundleIconName</key>
+	<string>AppIcon</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.utilities</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>NotchFlow uses AppleEvents to display Now Playing metadata and control playback in Apple Music, Spotify, and supported browsers.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>NotchFlow monitors Bluetooth audio connectivity to display AirPods and headphone connection HUDs.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>NotchFlow reads your upcoming calendar events to show meeting countdowns and an expandable monthly schedule in the Dynamic Island.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>NotchFlow reads your upcoming calendar events to show meeting countdowns and an expandable monthly schedule in the Dynamic Island.</string>
+	<key>NSLocationUsageDescription</key>
+	<string>NotchFlow uses your current location to show accurate local weather conditions in the Dynamic Island.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>NotchFlow uses your current location to show accurate local weather conditions in the Dynamic Island.</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright © 2026 Dillon Nagar. Released under the MIT License.</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+</dict>
+</plist>
