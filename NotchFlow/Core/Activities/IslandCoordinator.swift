@@ -267,8 +267,9 @@ public final class IslandCoordinator: ObservableObject {
             }
         }
 
+        let durationNanos = UInt64(max(0.8, settings.hudDuration) * 1_000_000_000)
         hudDismissTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(nanoseconds: 2_100_000_000)
+            try? await Task.sleep(nanoseconds: durationNanos)
             guard !Task.isCancelled, let self else { return }
             self.withIslandAnimation {
                 self.activeHUD = nil
@@ -508,7 +509,7 @@ public final class IslandCoordinator: ObservableObject {
     // MARK: - Geometry Computation for Hit-Testing & Layout
 
     public func currentIslandSize(for screen: NSScreen?) -> CGSize {
-        let baseNotch = screen?.notchSize ?? CGSize(width: 188, height: 32)
+        let baseNotch = screen?.notchSize ?? CGSize(width: 184, height: 32)
         let widthAdj = CGFloat(settings.compactWidthAdjustment)
         let heightAdj = CGFloat(settings.compactHeightAdjustment)
         let scale = CGFloat(settings.expandedScale)
@@ -518,37 +519,45 @@ public final class IslandCoordinator: ObservableObject {
             return CGSize(width: 1, height: 1)
         case .minimalIdle:
             return CGSize(
-                width: max(140, baseNotch.width + 16 + widthAdj * 0.5),
-                height: max(28, baseNotch.height + heightAdj * 0.5)
+                width: max(188, baseNotch.width + 12 + widthAdj * 0.5),
+                height: max(32, baseNotch.height + heightAdj * 0.5)
             )
         case .compactPill:
             return CGSize(
-                width: max(220, baseNotch.width + 104 + widthAdj),
-                height: max(32, baseNotch.height + 4 + heightAdj)
+                width: max(268, baseNotch.width + 92 + widthAdj),
+                height: max(36, baseNotch.height + 4 + heightAdj)
             )
         case .duoMode:
             return CGSize(
-                width: max(296, baseNotch.width + 168 + widthAdj),
-                height: max(34, baseNotch.height + 6 + heightAdj)
+                width: max(312, baseNotch.width + 136 + widthAdj),
+                height: max(36, baseNotch.height + 4 + heightAdj)
             )
         case .systemHUD:
             return CGSize(
-                width: max(280, baseNotch.width + 148 + hudOvershootAmount * 2),
-                height: max(42, baseNotch.height + 16 + hudOvershootAmount * 0.4)
+                width: max(364, baseNotch.width + 188 + hudOvershootAmount * 2),
+                height: max(39, baseNotch.height + 7 + hudOvershootAmount * 0.25)
             )
         case .quickPeek:
             return CGSize(
-                width: max(336, baseNotch.width + 184),
-                height: max(58, baseNotch.height + 30)
+                width: max(284, baseNotch.width + 104),
+                height: max(66, baseNotch.height + 34)
             )
         case .locked:
             return CGSize(
-                width: max(240, baseNotch.width + 92),
-                height: max(40, baseNotch.height + 12)
+                width: max(264, baseNotch.width + 88),
+                height: max(36, baseNotch.height + 4)
             )
         case .expanded:
-            let baseW: CGFloat = (expandedTab == .calendar) ? 470 : 436
-            let baseH: CGFloat = (expandedTab == .calendar) ? 286 : 238
+            let baseW: CGFloat = (expandedTab == .calendar) ? 472 : 446
+            let baseH: CGFloat
+            switch expandedTab {
+            case .music:
+                baseH = 216
+            case .calendar:
+                baseH = 248
+            default:
+                baseH = 228
+            }
             return CGSize(width: baseW * scale, height: baseH * scale)
         }
     }

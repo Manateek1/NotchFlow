@@ -200,6 +200,18 @@ public final class SettingsStore: ObservableObject {
     @Published public var showHUDPercentageText: Bool {
         didSet { defaults.set(showHUDPercentageText, forKey: Keys.showHUDPercentageText) }
     }
+    @Published public var hudBarTheme: HUDBarTheme {
+        didSet { defaults.set(hudBarTheme.rawValue, forKey: Keys.hudBarTheme) }
+    }
+    @Published public var hudDuration: Double {
+        didSet { defaults.set(hudDuration, forKey: Keys.hudDuration) }
+    }
+    @Published public var hudHideLabel: Bool {
+        didSet { defaults.set(hudHideLabel, forKey: Keys.hudHideLabel) }
+    }
+    @Published public var hudScaleSymbolSize: Bool {
+        didSet { defaults.set(hudScaleSymbolSize, forKey: Keys.hudScaleSymbolSize) }
+    }
     @Published public var quickPeekDuration: Double {
         didSet { defaults.set(quickPeekDuration, forKey: Keys.quickPeekDuration) }
     }
@@ -275,6 +287,10 @@ public final class SettingsStore: ObservableObject {
         static let enableFocusHUD = "nf.enableFocusHUD"
         static let enableHUDOvershoot = "nf.enableHUDOvershoot"
         static let showHUDPercentageText = "nf.showHUDPercentageText"
+        static let hudBarTheme = "nf.hudBarTheme"
+        static let hudDuration = "nf.hudDuration"
+        static let hudHideLabel = "nf.hudHideLabel"
+        static let hudScaleSymbolSize = "nf.hudScaleSymbolSize"
         static let quickPeekDuration = "nf.quickPeekDuration"
         static let enableLockScreenAnimation = "nf.enableLockScreenAnimation"
         static let hideSensitiveContentWhenLocked = "nf.hideSensitiveContentWhenLocked"
@@ -291,24 +307,24 @@ public final class SettingsStore: ObservableObject {
         self.showOnAllDisplays = defaults.object(forKey: Keys.showOnAllDisplays) as? Bool ?? false
         self.hasCompletedOnboarding = defaults.object(forKey: Keys.hasCompletedOnboarding) as? Bool ?? false
 
-        self.islandStyleMode = IslandStyleMode(rawValue: defaults.string(forKey: Keys.islandStyleMode) ?? "") ?? .automatic
+        self.islandStyleMode = IslandStyleMode(rawValue: defaults.string(forKey: Keys.islandStyleMode) ?? "") ?? .realNotch
         self.compactWidthAdjustment = defaults.object(forKey: Keys.compactWidthAdjustment) as? Double ?? 0.0
         self.compactHeightAdjustment = defaults.object(forKey: Keys.compactHeightAdjustment) as? Double ?? 0.0
         self.expandedScale = defaults.object(forKey: Keys.expandedScale) as? Double ?? 1.0
         self.animationSpeed = AnimationSpeedPreset(rawValue: defaults.string(forKey: Keys.animationSpeed) ?? "") ?? .smooth
         self.respectReduceMotion = defaults.object(forKey: Keys.respectReduceMotion) as? Bool ?? true
         self.appearanceTheme = AppearanceThemeMode(rawValue: defaults.string(forKey: Keys.appearanceTheme) ?? "") ?? .darkOnly
-        self.accentColorPreset = AccentColorPreset(rawValue: defaults.string(forKey: Keys.accentColorPreset) ?? "") ?? .cyanFlow
-        self.showContrastOutline = defaults.object(forKey: Keys.showContrastOutline) as? Bool ?? true
+        self.accentColorPreset = AccentColorPreset(rawValue: defaults.string(forKey: Keys.accentColorPreset) ?? "") ?? .dynamicArtwork
+        self.showContrastOutline = defaults.object(forKey: Keys.showContrastOutline) as? Bool ?? false
         self.coloredOutline = defaults.object(forKey: Keys.coloredOutline) as? Bool ?? false
         self.idleVisibility = IdleVisibilityMode(rawValue: defaults.string(forKey: Keys.idleVisibility) ?? "") ?? .alwaysVisible
-        self.cornerStyle = IslandCornerStyle(rawValue: defaults.string(forKey: Keys.cornerStyle) ?? "") ?? .continuousSquircle
+        self.cornerStyle = IslandCornerStyle(rawValue: defaults.string(forKey: Keys.cornerStyle) ?? "") ?? .classicNotch
 
         self.expandOnHover = defaults.object(forKey: Keys.expandOnHover) as? Bool ?? true
-        self.hoverDelay = defaults.object(forKey: Keys.hoverDelay) as? Double ?? 0.18
+        self.hoverDelay = defaults.object(forKey: Keys.hoverDelay) as? Double ?? 0.16
         self.expandOnClick = defaults.object(forKey: Keys.expandOnClick) as? Bool ?? true
         self.clickOutsideToDismiss = defaults.object(forKey: Keys.clickOutsideToDismiss) as? Bool ?? true
-        self.autoDismissDelay = defaults.object(forKey: Keys.autoDismissDelay) as? Double ?? 4.5
+        self.autoDismissDelay = defaults.object(forKey: Keys.autoDismissDelay) as? Double ?? 4.0
         self.enableSwipeGestures = defaults.object(forKey: Keys.enableSwipeGestures) as? Bool ?? true
         self.naturalSwipeDirection = defaults.object(forKey: Keys.naturalSwipeDirection) as? Bool ?? true
         self.middleClickAction = MiddleClickAction(rawValue: defaults.string(forKey: Keys.middleClickAction) ?? "") ?? .cycleActivities
@@ -319,7 +335,7 @@ public final class SettingsStore: ObservableObject {
         self.enableMusic = defaults.object(forKey: Keys.enableMusic) as? Bool ?? true
         self.preferredMediaProvider = MediaProviderPreference(rawValue: defaults.string(forKey: Keys.preferredMediaProvider) ?? "") ?? .automatic
         self.showAlbumArtwork = defaults.object(forKey: Keys.showAlbumArtwork) as? Bool ?? true
-        self.artworkGlowEffect = defaults.object(forKey: Keys.artworkGlowEffect) as? Bool ?? true
+        self.artworkGlowEffect = defaults.object(forKey: Keys.artworkGlowEffect) as? Bool ?? false
         self.dimArtworkOnPause = defaults.object(forKey: Keys.dimArtworkOnPause) as? Bool ?? true
         self.showWaveform = defaults.object(forKey: Keys.showWaveform) as? Bool ?? true
         self.waveformStyle = WaveformVisualStyle(rawValue: defaults.string(forKey: Keys.waveformStyle) ?? "") ?? .bars
@@ -346,31 +362,35 @@ public final class SettingsStore: ObservableObject {
         self.enableAudioDeviceHUD = defaults.object(forKey: Keys.enableAudioDeviceHUD) as? Bool ?? true
         self.enableFocusHUD = defaults.object(forKey: Keys.enableFocusHUD) as? Bool ?? true
         self.enableHUDOvershoot = defaults.object(forKey: Keys.enableHUDOvershoot) as? Bool ?? true
-        self.showHUDPercentageText = defaults.object(forKey: Keys.showHUDPercentageText) as? Bool ?? true
-        self.quickPeekDuration = defaults.object(forKey: Keys.quickPeekDuration) as? Double ?? 3.2
+        self.showHUDPercentageText = defaults.object(forKey: Keys.showHUDPercentageText) as? Bool ?? false
+        self.hudBarTheme = HUDBarTheme(rawValue: defaults.string(forKey: Keys.hudBarTheme) ?? "") ?? .glow
+        self.hudDuration = defaults.object(forKey: Keys.hudDuration) as? Double ?? 1.5
+        self.hudHideLabel = defaults.object(forKey: Keys.hudHideLabel) as? Bool ?? true
+        self.hudScaleSymbolSize = defaults.object(forKey: Keys.hudScaleSymbolSize) as? Bool ?? true
+        self.quickPeekDuration = defaults.object(forKey: Keys.quickPeekDuration) as? Double ?? 2.6
         self.enableLockScreenAnimation = defaults.object(forKey: Keys.enableLockScreenAnimation) as? Bool ?? true
         self.hideSensitiveContentWhenLocked = defaults.object(forKey: Keys.hideSensitiveContentWhenLocked) as? Bool ?? true
     }
 
     public func resetToDefaults() {
         isEnabled = true
-        islandStyleMode = .automatic
+        islandStyleMode = .realNotch
         compactWidthAdjustment = 0.0
         compactHeightAdjustment = 0.0
         expandedScale = 1.0
         animationSpeed = .smooth
         respectReduceMotion = true
         appearanceTheme = .darkOnly
-        accentColorPreset = .cyanFlow
-        showContrastOutline = true
+        accentColorPreset = .dynamicArtwork
+        showContrastOutline = false
         coloredOutline = false
         idleVisibility = .alwaysVisible
-        cornerStyle = .continuousSquircle
+        cornerStyle = .classicNotch
         expandOnHover = true
-        hoverDelay = 0.18
+        hoverDelay = 0.16
         expandOnClick = true
         clickOutsideToDismiss = true
-        autoDismissDelay = 4.5
+        autoDismissDelay = 4.0
         enableSwipeGestures = true
         naturalSwipeDirection = true
         middleClickAction = .cycleActivities
@@ -380,7 +400,7 @@ public final class SettingsStore: ObservableObject {
         enableMusic = true
         preferredMediaProvider = .automatic
         showAlbumArtwork = true
-        artworkGlowEffect = true
+        artworkGlowEffect = false
         dimArtworkOnPause = true
         showWaveform = true
         waveformStyle = .bars
@@ -403,8 +423,12 @@ public final class SettingsStore: ObservableObject {
         enableAudioDeviceHUD = true
         enableFocusHUD = true
         enableHUDOvershoot = true
-        showHUDPercentageText = true
-        quickPeekDuration = 3.2
+        showHUDPercentageText = false
+        hudBarTheme = .glow
+        hudDuration = 1.5
+        hudHideLabel = true
+        hudScaleSymbolSize = true
+        quickPeekDuration = 2.6
         enableLockScreenAnimation = true
         hideSensitiveContentWhenLocked = true
     }
@@ -430,8 +454,8 @@ public final class SettingsStore: ObservableObject {
         switch SMAppService.mainApp.status {
         case .enabled: return "Enabled"
         case .notRegistered: return "Not Registered"
-        case .notFound: return "App Service Not Found (Run from /Applications)"
-        case .requiresApproval: return "Requires Approval in System Settings > Login Items"
+        case .notFound: return "Run from /Applications to enable"
+        case .requiresApproval: return "Requires Approval in Login Items"
         @unknown default: return "Unknown"
         }
     }

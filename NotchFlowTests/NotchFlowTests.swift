@@ -12,10 +12,12 @@ final class NotchFlowTests: XCTestCase {
 
         let store = SettingsStore(defaults: customDefaults)
         XCTAssertTrue(store.isEnabled)
-        XCTAssertEqual(store.islandStyleMode, .automatic)
+        XCTAssertEqual(store.islandStyleMode, .realNotch)
+        XCTAssertEqual(store.hudBarTheme, .glow)
         XCTAssertEqual(store.temperatureUnit, .fahrenheit)
 
         store.islandStyleMode = .simulatedPill
+        store.hudBarTheme = .white
         store.compactWidthAdjustment = 24.0
         store.temperatureUnit = .celsius
         store.enableDuoMode = false
@@ -23,12 +25,14 @@ final class NotchFlowTests: XCTestCase {
         // Re-instantiate with the same UserDefaults to verify persistence
         let reloaded = SettingsStore(defaults: customDefaults)
         XCTAssertEqual(reloaded.islandStyleMode, .simulatedPill)
+        XCTAssertEqual(reloaded.hudBarTheme, .white)
         XCTAssertEqual(reloaded.compactWidthAdjustment, 24.0, accuracy: 0.01)
         XCTAssertEqual(reloaded.temperatureUnit, .celsius)
         XCTAssertFalse(reloaded.enableDuoMode)
 
         reloaded.resetToDefaults()
-        XCTAssertEqual(reloaded.islandStyleMode, .automatic)
+        XCTAssertEqual(reloaded.islandStyleMode, .realNotch)
+        XCTAssertEqual(reloaded.hudBarTheme, .glow)
         XCTAssertEqual(reloaded.compactWidthAdjustment, 0.0, accuracy: 0.01)
         XCTAssertTrue(reloaded.enableDuoMode)
     }

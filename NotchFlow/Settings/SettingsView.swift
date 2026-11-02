@@ -3,12 +3,21 @@ import AppKit
 import ApplicationServices
 
 public enum SettingsSection: String, CaseIterable, Identifiable {
+    // Top
     case general = "General"
-    case appearance = "Appearance"
-    case behavior = "Behavior"
-    case music = "Music & Media"
-    case calendarWeather = "Calendar & Weather"
-    case systemHUDs = "System HUDs"
+    // Notifications
+    case battery = "Battery"
+    case connectivity = "Connectivity"
+    case focus = "Focus"
+    case display = "Display"
+    case sound = "Sound"
+    // Live Activities
+    case nowPlaying = "Now Playing"
+    case calendar = "Calendar"
+    case weather = "Weather"
+    case lockScreen = "Lock Screen"
+    // NotchFlow
+    case gestures = "Gestures"
     case permissions = "Permissions"
     case about = "About"
 
@@ -17,13 +26,36 @@ public enum SettingsSection: String, CaseIterable, Identifiable {
     public var symbolName: String {
         switch self {
         case .general: return "gearshape.fill"
-        case .appearance: return "paintbrush.fill"
-        case .behavior: return "hand.tap.fill"
-        case .music: return "waveform.circle.fill"
-        case .calendarWeather: return "calendar.badge.clock"
-        case .systemHUDs: return "slider.horizontal.below.rectangle"
-        case .permissions: return "lock.shield.fill"
+        case .battery: return "bolt.fill"
+        case .connectivity: return "airpodspro"
+        case .focus: return "moon.fill"
+        case .display: return "sun.max.fill"
+        case .sound: return "speaker.wave.2.fill"
+        case .nowPlaying: return "play.fill"
+        case .calendar: return "calendar"
+        case .weather: return "cloud.sun.fill"
+        case .lockScreen: return "lock.fill"
+        case .gestures: return "hand.draw.fill"
+        case .permissions: return "checkmark.shield.fill"
         case .about: return "info.circle.fill"
+        }
+    }
+
+    public var badgeColor: Color {
+        switch self {
+        case .general: return Color(red: 0.56, green: 0.56, blue: 0.58)
+        case .battery: return Color(red: 0.96, green: 0.56, blue: 0.22)
+        case .connectivity: return Color(red: 0.18, green: 0.80, blue: 0.44)
+        case .focus: return Color(red: 0.38, green: 0.42, blue: 0.94)
+        case .display: return Color(red: 0.64, green: 0.36, blue: 0.96)
+        case .sound: return Color(red: 0.94, green: 0.30, blue: 0.68)
+        case .nowPlaying: return Color(red: 0.96, green: 0.28, blue: 0.36)
+        case .calendar: return Color(red: 0.98, green: 0.38, blue: 0.24)
+        case .weather: return Color(red: 0.24, green: 0.68, blue: 0.94)
+        case .lockScreen: return Color(red: 0.16, green: 0.16, blue: 0.18)
+        case .gestures: return Color(red: 0.24, green: 0.78, blue: 0.70)
+        case .permissions: return Color(red: 0.20, green: 0.58, blue: 0.98)
+        case .about: return Color(red: 0.56, green: 0.56, blue: 0.58)
         }
     }
 }
@@ -39,169 +71,265 @@ public struct SettingsView: View {
     @ObservedObject var batteryMgr = BatteryManager.shared
     @ObservedObject var focusMgr = FocusManager.shared
 
-    @State private var selectedSection: SettingsSection = .general
+    @State private var selectedSection: SettingsSection
     @State private var isAccessibilityTrusted: Bool = AXIsProcessTrusted()
 
     public var onOpenOnboarding: (() -> Void)?
 
-    public init(onOpenOnboarding: (() -> Void)? = nil) {
+    private let switchMint = Color(red: 0.24, green: 0.78, blue: 0.70)
+    private let sidebarBg = Color(red: 0.21, green: 0.21, blue: 0.22)
+    private let detailBg = Color(red: 0.23, green: 0.23, blue: 0.24)
+
+    public init(initialSection: SettingsSection = .display, onOpenOnboarding: (() -> Void)? = nil) {
+        self._selectedSection = State(initialValue: initialSection)
         self.onOpenOnboarding = onOpenOnboarding
     }
 
     public var body: some View {
         HStack(spacing: 0) {
-            // Left Sidebar
-            VStack(alignment: .leading, spacing: 10) {
-                // Brand Header
-                HStack(spacing: 10) {
-                    Image(nsImage: NSApp.applicationIconImage)
-                        .resizable()
-                        .frame(width: 38, height: 38)
-                        .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("NotchFlow")
-                            .font(.system(size: 15.5, weight: .bold, design: .rounded))
-                            .foregroundStyle(.white)
-                        Text("Dynamic Island for Mac")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.58))
-                    }
-                }
-                .padding(.horizontal, 14)
-                .padding(.top, 16)
-                .padding(.bottom, 4)
-
-                // Section Navigation Buttons
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(SettingsSection.allCases) { section in
-                        let isSelected = (selectedSection == section)
-                        let accent = settings.accentColorPreset.primaryColor
-
-                        Button {
-                            selectedSection = section
-                        } label: {
-                            HStack(spacing: 10) {
-                                Image(systemName: section.symbolName)
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundStyle(isSelected ? .black : accent)
-                                    .frame(width: 20)
-
-                                Text(section.rawValue)
-                                    .font(.system(size: 13, weight: isSelected ? .bold : .medium, design: .rounded))
-                                    .foregroundStyle(isSelected ? .black : .white.opacity(0.88))
-
-                                Spacer()
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(
-                                isSelected
-                                    ? accent
-                                    : Color.white.opacity(0.04),
-                                in: RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.horizontal, 10)
-
+            // Left Sidebar (macOS Sequoia / Alcove Style)
+            VStack(alignment: .leading, spacing: 2) {
+                // Space for macOS Window Traffic Lights
                 Spacer()
+                    .frame(height: 36)
 
-                // Quick Island State Bar at Bottom of Sidebar
-                VStack(alignment: .leading, spacing: 8) {
-                    Toggle("Enable NotchFlow", isOn: $settings.isEnabled)
-                        .toggleStyle(.switch)
-                        .controlSize(.small)
-                        .font(.system(size: 12, weight: .semibold))
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        sidebarRow(.general)
+
+                        sidebarCategoryHeader("Notifications")
+                        sidebarRow(.battery)
+                        sidebarRow(.connectivity)
+                        sidebarRow(.focus)
+                        sidebarRow(.display)
+                        sidebarRow(.sound)
+
+                        sidebarCategoryHeader("Live Activities")
+                        sidebarRow(.nowPlaying)
+                        sidebarRow(.calendar)
+                        sidebarRow(.weather)
+                        sidebarRow(.lockScreen)
+
+                        sidebarCategoryHeader("NotchFlow")
+                        sidebarRow(.gestures)
+                        sidebarRow(.permissions)
+                        sidebarRow(.about)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 14)
+                }
+            }
+            .frame(width: 196)
+            .background(sidebarBg)
+
+            // Hairline Vertical Divider
+            Rectangle()
+                .fill(Color.white.opacity(0.09))
+                .frame(width: 1)
+
+            // Right Detail Pane
+            VStack(spacing: 0) {
+                // Top Detail Header Bar
+                HStack(spacing: 10) {
+                    squircleBadge(for: selectedSection, size: 22, iconSize: 11.5)
+
+                    Text(selectedSection.rawValue)
+                        .font(.system(size: 14.5, weight: .semibold))
                         .foregroundStyle(.white)
 
-                    HStack(spacing: 6) {
-                        Button("Expand") {
-                            coordinator.toggleExpandCollapse()
-                        }
-                        .controlSize(.small)
+                    Spacer()
 
-                        Button("Cycle Widget") {
-                            coordinator.cycleActivity()
-                        }
-                        .controlSize(.small)
+                    previewHeaderButton(for: selectedSection)
+                }
+                .padding(.horizontal, 20)
+                .frame(height: 48)
+                .background(detailBg)
+
+                Rectangle()
+                    .fill(Color.white.opacity(0.08))
+                    .frame(height: 1)
+
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 14) {
+                        sectionContent(for: selectedSection)
                     }
+                    .padding(20)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .padding(12)
-                .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .padding(.horizontal, 10)
-                .padding(.bottom, 12)
             }
-            .frame(width: 220)
-            .background(Color(red: 0.06, green: 0.07, blue: 0.10))
-
-            Divider()
-                .background(Color.white.opacity(0.12))
-
-            // Right Detail Area
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    sectionHeader(selectedSection)
-                    sectionDetailContent(selectedSection)
-                }
-                .padding(24)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .frame(minWidth: 540, minHeight: 500)
-            .background(Color(red: 0.09, green: 0.10, blue: 0.14))
+            .frame(minWidth: 444, maxWidth: .infinity, maxHeight: .infinity)
+            .background(detailBg)
         }
+        .background(detailBg)
+        .tint(switchMint)
         .preferredColorScheme(.dark)
     }
 
-    private func sectionHeader(_ section: SettingsSection) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: section.symbolName)
-                .font(.system(size: 20, weight: .bold))
-                .foregroundStyle(settings.accentColorPreset.primaryColor)
-                .frame(width: 34, height: 34)
-                .background(settings.accentColorPreset.primaryColor.opacity(0.14), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    // MARK: - Sidebar Helpers
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(section.rawValue)
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
-                Text(sectionSubtitle(for: section))
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
-        }
+    private func sidebarCategoryHeader(_ title: String) -> some View {
+        Text(title)
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(.white.opacity(0.42))
+            .padding(.horizontal, 8)
+            .padding(.top, 9)
+            .padding(.bottom, 2)
     }
 
-    private func sectionSubtitle(for section: SettingsSection) -> String {
-        switch section {
-        case .general: return "Configure startup behavior, display placement, and menu bar preferences."
-        case .appearance: return "Customize notch geometry, animations, accent colors, and visual themes."
-        case .behavior: return "Fine-tune hover, click, swipe gestures, Duo Mode, and auto-dismiss timing."
-        case .music: return "Configure Now Playing providers, album art effects, and live waveforms."
-        case .calendarWeather: return "Manage EventKit calendars, meeting countdowns, and local weather."
-        case .systemHUDs: return "Customize and test Dynamic Island HUDs for volume, brightness, battery, and audio."
-        case .permissions: return "Inspect macOS system permissions and open System Settings panes."
-        case .about: return "Version information, open-source license, privacy policy, and credits."
+    private func sidebarRow(_ section: SettingsSection) -> some View {
+        let isSelected = (selectedSection == section)
+
+        return Button {
+            withAnimation(.easeInOut(duration: 0.14)) {
+                selectedSection = section
+            }
+        } label: {
+            HStack(spacing: 9) {
+                squircleBadge(for: section, size: 22, iconSize: 11)
+
+                Text(section.rawValue)
+                    .font(.system(size: 13, weight: isSelected ? .medium : .regular))
+                    .foregroundStyle(.white.opacity(isSelected ? 0.98 : 0.84))
+
+                Spacer()
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4.5)
+            .background(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(isSelected ? Color.white.opacity(0.11) : Color.clear)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func squircleBadge(for section: SettingsSection, size: CGFloat, iconSize: CGFloat) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            section.badgeColor.opacity(0.95),
+                            section.badgeColor.opacity(0.78)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .frame(width: size, height: size)
+                .overlay(
+                    RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.18), lineWidth: 0.5)
+                )
+
+            Image(systemName: section.symbolName)
+                .font(.system(size: iconSize, weight: .semibold))
+                .foregroundStyle(.white)
         }
     }
 
     @ViewBuilder
-    private func sectionDetailContent(_ section: SettingsSection) -> some View {
+    private func previewHeaderButton(for section: SettingsSection) -> some View {
+        switch section {
+        case .display:
+            Button("Preview HUD") {
+                brightnessMgr.emitBrightnessHUD()
+            }
+            .buttonStyle(HeaderPillButtonStyle())
+        case .sound:
+            Button("Preview HUD") {
+                volumeMgr.emitVolumeHUD()
+            }
+            .buttonStyle(HeaderPillButtonStyle())
+        case .battery:
+            Button("Preview HUD") {
+                coordinator.presentSystemHUD(
+                    SystemHUDPayload(
+                        kind: .batteryCharging,
+                        title: "Charging",
+                        subtitle: "\(batteryMgr.state.percentage)%",
+                        symbolName: "battery.100percent.bolt",
+                        progress: Double(batteryMgr.state.percentage) / 100.0,
+                        valueText: "\(batteryMgr.state.percentage)%",
+                        tintColorName: "green"
+                    )
+                )
+            }
+            .buttonStyle(HeaderPillButtonStyle())
+        case .connectivity:
+            Button("Preview AirPods") {
+                coordinator.presentSystemHUD(
+                    SystemHUDPayload(
+                        kind: .connectivity,
+                        title: "AirPods Pro",
+                        subtitle: "Connected",
+                        symbolName: "airpodspro",
+                        progress: 0.92,
+                        valueText: "92%",
+                        tintColorName: "green"
+                    )
+                )
+            }
+            .buttonStyle(HeaderPillButtonStyle())
+        case .focus:
+            Button("Toggle Focus") {
+                focusMgr.cycleFocusProfile()
+            }
+            .buttonStyle(HeaderPillButtonStyle())
+        case .nowPlaying:
+            Button("Open Player") {
+                mediaMgr.loadInteractiveDemoTrack()
+                coordinator.expandIsland(to: .music)
+            }
+            .buttonStyle(HeaderPillButtonStyle())
+        case .calendar:
+            Button("Open Calendar") {
+                coordinator.expandIsland(to: .calendar)
+            }
+            .buttonStyle(HeaderPillButtonStyle())
+        default:
+            EmptyView()
+        }
+    }
+
+    // MARK: - Section Router
+
+    @ViewBuilder
+    private func sectionContent(for section: SettingsSection) -> some View {
         switch section {
         case .general:
             generalSection
-        case .appearance:
-            appearanceSection
-        case .behavior:
-            behaviorSection
-        case .music:
-            musicSection
-        case .calendarWeather:
-            calendarWeatherSection
-        case .systemHUDs:
-            systemHUDsSection
+        case .display:
+            hudConfigurationSection(
+                title: "Display",
+                symbol: "sun.max.fill",
+                symbolColor: Color(red: 0.64, green: 0.36, blue: 0.96),
+                isEnabled: $settings.enableBrightnessHUD
+            )
+        case .sound:
+            hudConfigurationSection(
+                title: "Sound",
+                symbol: "speaker.wave.2.fill",
+                symbolColor: Color(red: 0.94, green: 0.30, blue: 0.68),
+                isEnabled: $settings.enableVolumeHUD
+            )
+        case .battery:
+            batterySection
+        case .connectivity:
+            connectivitySection
+        case .focus:
+            focusSection
+        case .nowPlaying:
+            nowPlayingSection
+        case .calendar:
+            calendarSection
+        case .weather:
+            weatherSection
+        case .lockScreen:
+            lockScreenSection
+        case .gestures:
+            gesturesSection
         case .permissions:
             permissionsSection
         case .about:
@@ -209,509 +337,637 @@ public struct SettingsView: View {
         }
     }
 
+    // MARK: - Shared HUD Customizer (Matches `lh-2.png` Display & Sound Panes 1:1!)
+
+    private func hudConfigurationSection(
+        title: String,
+        symbol: String,
+        symbolColor: Color,
+        isEnabled: Binding<Bool>
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            // Top Master Card
+            SettingsCard {
+                HStack {
+                    Image(systemName: symbol)
+                        .font(.system(size: 13.5, weight: .semibold))
+                        .foregroundStyle(switchMint)
+                        .frame(width: 20)
+                    Text(title)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white)
+                    Spacer()
+                    Toggle("", isOn: isEnabled)
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+            }
+
+            // HUDs Subheader Row
+            HStack {
+                Text("HUDs")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.60))
+                Spacer()
+                HStack(spacing: 8) {
+                    Toggle("", isOn: isEnabled)
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .controlSize(.small)
+                    Image(systemName: "link")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.38))
+                }
+            }
+            .padding(.horizontal, 4)
+
+            // Main Visual HUD Customizer Card
+            SettingsCard {
+                VStack(alignment: .leading, spacing: 14) {
+                    // 1. Duration Slider Row
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Duration")
+                                .font(.system(size: 13, weight: .regular))
+                                .foregroundStyle(.white.opacity(0.90))
+                            Spacer()
+                            Text(String(format: "%.1f s", settings.hudDuration))
+                                .font(.system(size: 11.5, weight: .medium).monospacedDigit())
+                                .foregroundStyle(.white.opacity(0.82))
+                                .padding(.horizontal, 9)
+                                .padding(.vertical, 3)
+                                .background(Color.white.opacity(0.08), in: Capsule())
+                        }
+
+                        Slider(value: $settings.hudDuration, in: 0.8...3.5, step: 0.1)
+                            .tint(.white.opacity(0.45))
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.top, 12)
+
+                    CardDivider()
+
+                    // 2. Three Visual HUD Bar Theme Cards (White / Accent / Glow)
+                    HStack(spacing: 12) {
+                        ForEach(HUDBarTheme.allCases) { theme in
+                            hudThemePreviewCard(theme)
+                        }
+                    }
+                    .padding(.horizontal, 14)
+
+                    CardDivider()
+
+                    // 3. Three Visual Animation Speed Cards (Smooth / Fast / Instant)
+                    HStack(spacing: 10) {
+                        ForEach(AnimationSpeedPreset.allCases) { speed in
+                            animationSpeedCard(speed)
+                        }
+                    }
+                    .padding(.horizontal, 14)
+
+                    CardDivider()
+
+                    // 4. Show Percentage Switch Row
+                    HStack {
+                        Text("Show percentage")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.white.opacity(0.90))
+                        Spacer()
+                        Toggle("", isOn: $settings.showHUDPercentageText)
+                            .labelsHidden()
+                            .toggleStyle(.switch)
+                    }
+                    .padding(.horizontal, 14)
+
+                    CardDivider()
+
+                    // 5. Hide Label Switch Row
+                    HStack {
+                        Text("Hide label")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.white.opacity(0.90))
+                        Spacer()
+                        Toggle("", isOn: $settings.hudHideLabel)
+                            .labelsHidden()
+                            .toggleStyle(.switch)
+                    }
+                    .padding(.horizontal, 14)
+
+                    CardDivider()
+
+                    // 6. Symbol Scaling Visual Cards (Retain symbol size vs Scale symbol size)
+                    HStack(spacing: 12) {
+                        symbolScalingCard(
+                            title: "Retain symbol size",
+                            isSelected: !settings.hudScaleSymbolSize,
+                            symbol: symbol,
+                            scales: false
+                        ) {
+                            settings.hudScaleSymbolSize = false
+                        }
+
+                        symbolScalingCard(
+                            title: "Scale symbol size",
+                            isSelected: settings.hudScaleSymbolSize,
+                            symbol: symbol,
+                            scales: true
+                        ) {
+                            settings.hudScaleSymbolSize = true
+                        }
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.bottom, 12)
+                }
+            }
+        }
+    }
+
+    private func hudThemePreviewCard(_ theme: HUDBarTheme) -> some View {
+        let isSelected = (settings.hudBarTheme == theme)
+        let barColor: Color = {
+            switch theme {
+            case .white: return .white
+            case .accent: return switchMint
+            case .glow: return .white
+            }
+        }()
+
+        return Button {
+            withAnimation(.spring(response: 0.24, dampingFraction: 0.8)) {
+                settings.hudBarTheme = theme
+            }
+        } label: {
+            VStack(spacing: 6) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .fill(Color.black)
+                        .frame(height: 36)
+
+                    // Simulated HUD Bar
+                    ZStack(alignment: .leading) {
+                        Capsule(style: .continuous)
+                            .fill(Color.white.opacity(0.22))
+                            .frame(width: 72, height: 4.5)
+
+                        Capsule(style: .continuous)
+                            .fill(barColor)
+                            .frame(width: 48, height: 4.5)
+                            .shadow(
+                                color: theme == .glow ? Color.white.opacity(0.95) : .clear,
+                                radius: theme == .glow ? 6 : 0
+                            )
+                    }
+                }
+                .padding(3)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        .strokeBorder(isSelected ? switchMint : Color.white.opacity(0.10), lineWidth: isSelected ? 2.0 : 1.0)
+                )
+
+                Text(theme.title)
+                    .font(.system(size: 11.5, weight: isSelected ? .semibold : .regular))
+                    .foregroundStyle(.white.opacity(isSelected ? 0.95 : 0.55))
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func animationSpeedCard(_ speed: AnimationSpeedPreset) -> some View {
+        let isSelected = (settings.animationSpeed == speed)
+
+        return Button {
+            withAnimation(.spring(response: 0.24, dampingFraction: 0.8)) {
+                settings.animationSpeed = speed
+            }
+        } label: {
+            VStack(spacing: 6) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .fill(Color.white.opacity(0.05))
+                        .frame(height: 36)
+
+                    Image(systemName: speed.symbolName)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(isSelected ? switchMint : .white.opacity(0.55))
+                }
+                .overlay(
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .strokeBorder(isSelected ? switchMint : Color.white.opacity(0.10), lineWidth: isSelected ? 2.0 : 1.0)
+                )
+
+                Text(speed.title)
+                    .font(.system(size: 11.5, weight: isSelected ? .semibold : .regular))
+                    .foregroundStyle(.white.opacity(isSelected ? 0.95 : 0.55))
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func symbolScalingCard(
+        title: String,
+        isSelected: Bool,
+        symbol: String,
+        scales: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            VStack(spacing: 6) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .fill(Color.white.opacity(0.05))
+                        .frame(height: 40)
+
+                    if scales {
+                        HStack(spacing: 8) {
+                            Image(systemName: symbol)
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundStyle(isSelected ? switchMint : .white.opacity(0.55))
+                            HStack(spacing: 3) {
+                                ForEach(0..<3, id: \.self) { _ in
+                                    Circle()
+                                        .fill((isSelected ? switchMint : Color.white).opacity(0.35))
+                                        .frame(width: 2.5, height: 2.5)
+                                }
+                            }
+                            Image(systemName: symbol)
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(isSelected ? switchMint : .white.opacity(0.55))
+                        }
+                    } else {
+                        Image(systemName: symbol)
+                            .font(.system(size: 13.5, weight: .semibold))
+                            .foregroundStyle(isSelected ? switchMint : .white.opacity(0.55))
+                    }
+                }
+                .overlay(
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .strokeBorder(isSelected ? switchMint : Color.white.opacity(0.10), lineWidth: isSelected ? 2.0 : 1.0)
+                )
+
+                Text(title)
+                    .font(.system(size: 11.5, weight: isSelected ? .semibold : .regular))
+                    .foregroundStyle(.white.opacity(isSelected ? 0.95 : 0.55))
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.plain)
+    }
+
     // MARK: - 1. General Section
 
     private var generalSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            GroupBox("Application & Startup") {
+        VStack(alignment: .leading, spacing: 14) {
+            SettingsCard {
+                VStack(spacing: 12) {
+                    settingsSwitchRow("Enable NotchFlow Dynamic Island", isOn: $settings.isEnabled)
+                    CardDivider()
+                    settingsSwitchRow("Launch at Login", subtitle: settings.launchAtLoginSystemStatus, isOn: $settings.launchAtLogin)
+                    CardDivider()
+                    settingsSwitchRow("Show Icon in Menu Bar", isOn: $settings.showMenuBarIcon)
+                    CardDivider()
+                    settingsSwitchRow("Start Minimized in Background", isOn: $settings.startMinimized)
+                    CardDivider()
+                    settingsSwitchRow("Hide in Fullscreen Apps & Games", isOn: $settings.hideInFullscreen)
+                }
+                .padding(.vertical, 12)
+            }
+
+            // Island Hardware Mode Visual Selector
+            SettingsCard {
                 VStack(alignment: .leading, spacing: 12) {
-                    Toggle("Enable NotchFlow Dynamic Island", isOn: $settings.isEnabled)
-                    Divider()
+                    Text("Island Geometry & Display")
+                        .font(.system(size: 12.5, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .padding(.horizontal, 14)
+
+                    HStack(spacing: 12) {
+                        islandModePreviewCard(
+                            title: "MacBook Notch",
+                            isNotched: true,
+                            isSelected: settings.islandStyleMode != .simulatedPill
+                        ) {
+                            settings.islandStyleMode = .realNotch
+                        }
+
+                        islandModePreviewCard(
+                            title: "Floating Pill",
+                            isNotched: false,
+                            isSelected: settings.islandStyleMode == .simulatedPill
+                        ) {
+                            settings.islandStyleMode = .simulatedPill
+                        }
+                    }
+                    .padding(.horizontal, 14)
+
+                    CardDivider()
+
                     HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Toggle("Launch NotchFlow at Login", isOn: $settings.launchAtLogin)
-                            Text("System Status: \(settings.launchAtLoginSystemStatus)")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
+                        Text("Preferred Display")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.white.opacity(0.90))
                         Spacer()
-                    }
-                    Divider()
-                    Toggle("Show NotchFlow Icon in Menu Bar", isOn: $settings.showMenuBarIcon)
-                    Divider()
-                    Toggle("Start Minimized in Background on Launch", isOn: $settings.startMinimized)
-                }
-                .padding(8)
-            }
-
-            GroupBox("Display & Multi-Monitor Configuration") {
-                VStack(alignment: .leading, spacing: 12) {
-                    Picker("Preferred Display", selection: $settings.preferredDisplayID) {
-                        Text("Automatic (Notched or Main Display)").tag("main")
-                        Text("Built-in MacBook Display").tag("builtIn")
-                        ForEach(NSScreen.screens, id: \.displayID) { screen in
-                            Text(screen.displayLabel).tag(screen.persistentDisplayID)
+                        Picker("", selection: $settings.preferredDisplayID) {
+                            Text("Automatic (Primary Display)").tag("main")
+                            Text("Built-in MacBook Display").tag("builtIn")
+                            ForEach(NSScreen.screens, id: \.displayID) { screen in
+                                Text(screen.displayLabel).tag(screen.persistentDisplayID)
+                            }
                         }
+                        .labelsHidden()
+                        .frame(width: 210)
+                        .disabled(settings.showOnAllDisplays)
                     }
-                    .disabled(settings.showOnAllDisplays)
+                    .padding(.horizontal, 14)
 
-                    Divider()
-                    Toggle("Show Dynamic Island on All Connected Displays", isOn: $settings.showOnAllDisplays)
+                    CardDivider()
+                    settingsSwitchRow("Show on All Connected Displays", isOn: $settings.showOnAllDisplays)
                 }
-                .padding(8)
+                .padding(.vertical, 12)
             }
 
-            GroupBox("Quick Actions") {
-                HStack(spacing: 12) {
-                    Button("Re-run Welcome Onboarding...") {
+            SettingsCard {
+                HStack(spacing: 10) {
+                    Button("Welcome Guide") {
                         onOpenOnboarding?()
                     }
-                    Button("Reposition Island Panels") {
+                    .buttonStyle(SecondaryCardButtonStyle())
+
+                    Button("Reposition Island") {
                         IslandWindowController.shared.rebuildPanels()
                     }
+                    .buttonStyle(SecondaryCardButtonStyle())
+
                     Spacer()
-                    Button("Reset All Settings to Defaults", role: .destructive) {
+
+                    Button("Reset Defaults") {
                         settings.resetToDefaults()
                     }
+                    .buttonStyle(SecondaryCardButtonStyle(isDestructive: true))
                 }
-                .padding(8)
+                .padding(12)
             }
         }
     }
 
-    // MARK: - 2. Appearance Section
+    private func islandModePreviewCard(title: String, isNotched: Bool, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 6) {
+                ZStack(alignment: .top) {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color(red: 0.34, green: 0.24, blue: 0.48),
+                                    Color(red: 0.18, green: 0.16, blue: 0.28)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(height: 44)
 
-    private var appearanceSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            GroupBox("Island Mode & Geometry") {
-                VStack(alignment: .leading, spacing: 12) {
-                    Picker("Island Shape Mode", selection: $settings.islandStyleMode) {
-                        ForEach(IslandStyleMode.allCases) { mode in
-                            Text(mode.title).tag(mode)
-                        }
-                    }
-
-                    Picker("Corner Styling", selection: $settings.cornerStyle) {
-                        ForEach(IslandCornerStyle.allCases) { style in
-                            Text(style.title).tag(style)
-                        }
-                    }
-
-                    Picker("Idle Visibility", selection: $settings.idleVisibility) {
-                        ForEach(IdleVisibilityMode.allCases) { mode in
-                            Text(mode.title).tag(mode)
-                        }
-                    }
-
-                    Divider()
-
-                    HStack {
-                        Text("Compact Width Fine-Tune")
-                        Spacer()
-                        Slider(value: $settings.compactWidthAdjustment, in: -30...60, step: 2)
-                            .frame(width: 200)
-                        Text("\(Int(settings.compactWidthAdjustment)) pt")
-                            .font(.caption.monospacedDigit())
-                            .frame(width: 44, alignment: .trailing)
-                    }
-
-                    HStack {
-                        Text("Compact Height Fine-Tune")
-                        Spacer()
-                        Slider(value: $settings.compactHeightAdjustment, in: -4...14, step: 1)
-                            .frame(width: 200)
-                        Text("\(Int(settings.compactHeightAdjustment)) pt")
-                            .font(.caption.monospacedDigit())
-                            .frame(width: 44, alignment: .trailing)
-                    }
-
-                    HStack {
-                        Text("Expanded Panel Scale")
-                        Spacer()
-                        Slider(value: $settings.expandedScale, in: 0.90...1.15, step: 0.05)
-                            .frame(width: 200)
-                        Text("\(Int(settings.expandedScale * 100))%")
-                            .font(.caption.monospacedDigit())
-                            .frame(width: 44, alignment: .trailing)
+                    if isNotched {
+                        NotchIslandShape(topShoulderRadius: 6, bottomCornerRadius: 9)
+                            .fill(Color.black)
+                            .frame(width: 86, height: 18)
+                    } else {
+                        Capsule(style: .continuous)
+                            .fill(Color.black)
+                            .frame(width: 78, height: 15)
+                            .padding(.top, 6)
                     }
                 }
-                .padding(8)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .strokeBorder(isSelected ? switchMint : Color.white.opacity(0.10), lineWidth: isSelected ? 2.0 : 1.0)
+                )
+
+                Text(title)
+                    .font(.system(size: 11.5, weight: isSelected ? .semibold : .regular))
+                    .foregroundStyle(.white.opacity(isSelected ? 0.95 : 0.55))
             }
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.plain)
+    }
 
-            GroupBox("Colors, Theme & Outlines") {
-                VStack(alignment: .leading, spacing: 12) {
-                    Picker("Island Surface Theme", selection: $settings.appearanceTheme) {
-                        ForEach(AppearanceThemeMode.allCases) { theme in
-                            Text(theme.title).tag(theme)
-                        }
-                    }
+    // MARK: - 2. Battery Section
 
-                    Picker("Accent Color Preset", selection: $settings.accentColorPreset) {
-                        ForEach(AccentColorPreset.allCases) { preset in
-                            Text(preset.title).tag(preset)
-                        }
-                    }
-
-                    Divider()
-                    Toggle("Show Subtle Contrast Rim Outline", isOn: $settings.showContrastOutline)
-                    Toggle("Tint Rim Outline with Active Accent Color", isOn: $settings.coloredOutline)
+    private var batterySection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            SettingsCard {
+                VStack(spacing: 12) {
+                    settingsSwitchRow("Battery Status & Low Battery HUD", isOn: $settings.enableBatteryHUD)
+                    CardDivider()
+                    settingsSwitchRow("Charger Connected / Disconnected Alert", isOn: $settings.enableChargingNotifications)
+                    CardDivider()
+                    settingsSwitchRow("Elastic Spring Overshoot", isOn: $settings.enableHUDOvershoot)
                 }
-                .padding(8)
-            }
-
-            GroupBox("Motion & Animation") {
-                VStack(alignment: .leading, spacing: 12) {
-                    Picker("Animation Speed", selection: $settings.animationSpeed) {
-                        ForEach(AnimationSpeedPreset.allCases) { speed in
-                            Text(speed.title).tag(speed)
-                        }
-                    }
-                    Toggle("Respect macOS Reduce Motion Accessibility Setting", isOn: $settings.respectReduceMotion)
-                }
-                .padding(8)
+                .padding(.vertical, 12)
             }
         }
     }
 
-    // MARK: - 3. Behavior Section
+    // MARK: - 3. Connectivity Section
 
-    private var behaviorSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            GroupBox("Mouse & Hover Interactions") {
-                VStack(alignment: .leading, spacing: 12) {
-                    Toggle("Expand Dynamic Island on Cursor Hover", isOn: $settings.expandOnHover)
-
-                    if settings.expandOnHover {
-                        HStack {
-                            Text("Hover Expansion Delay")
-                            Spacer()
-                            Slider(value: $settings.hoverDelay, in: 0.05...0.75, step: 0.05)
-                                .frame(width: 200)
-                            Text(String(format: "%.2fs", settings.hoverDelay))
-                                .font(.caption.monospacedDigit())
-                                .frame(width: 48, alignment: .trailing)
-                        }
-                    }
-
-                    Divider()
-                    Toggle("Expand or Collapse on Click", isOn: $settings.expandOnClick)
-                    Toggle("Dismiss Expanded Panel When Clicking Outside", isOn: $settings.clickOutsideToDismiss)
-
-                    HStack {
-                        Text("Auto-Collapse Delay After Cursor Leaves")
-                        Spacer()
-                        Slider(value: $settings.autoDismissDelay, in: 1.5...10.0, step: 0.5)
-                            .frame(width: 200)
-                        Text(String(format: "%.1fs", settings.autoDismissDelay))
-                            .font(.caption.monospacedDigit())
-                            .frame(width: 48, alignment: .trailing)
-                    }
+    private var connectivitySection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            SettingsCard {
+                VStack(spacing: 12) {
+                    settingsSwitchRow("AirPods & Bluetooth Connection HUD", isOn: $settings.enableConnectivityHUD)
+                    CardDivider()
+                    settingsSwitchRow("Audio Output Route Changes", isOn: $settings.enableAudioDeviceHUD)
                 }
-                .padding(8)
-            }
-
-            GroupBox("Trackpad Gestures & Multitasking") {
-                VStack(alignment: .leading, spacing: 12) {
-                    Toggle("Enable Two-Finger Trackpad Swipe Gestures", isOn: $settings.enableSwipeGestures)
-                    Toggle("Natural Swipe Direction for Track Skipping", isOn: $settings.naturalSwipeDirection)
-                    Divider()
-
-                    Picker("Middle-Click Action", selection: $settings.middleClickAction) {
-                        ForEach(MiddleClickAction.allCases) { action in
-                            Text(action.title).tag(action)
-                        }
-                    }
-
-                    Divider()
-                    Toggle("Enable Duo Mode (Show Music + Calendar/Weather Simultaneously)", isOn: $settings.enableDuoMode)
-
-                    Picker("Preferred Default Compact Activity", selection: $settings.preferredIdleActivity) {
-                        Text("Now Playing (Music)").tag(IslandActivityKind.music)
-                        Text("Calendar Countdown").tag(IslandActivityKind.calendar)
-                        Text("Local Weather").tag(IslandActivityKind.weather)
-                        Text("Battery Status").tag(IslandActivityKind.battery)
-                        Text("Minimal Indicator").tag(IslandActivityKind.minimal)
-                    }
-                    .onChange(of: settings.preferredIdleActivity) { _, newValue in
-                        coordinator.primaryActivity = newValue
-                        coordinator.recalculateRestingState()
-                    }
-
-                    Divider()
-                    Toggle("Automatically Hide Island in Fullscreen Apps / Games", isOn: $settings.hideInFullscreen)
-                }
-                .padding(8)
+                .padding(.vertical, 12)
             }
         }
     }
 
-    // MARK: - 4. Music Section
+    // MARK: - 4. Focus Section
 
-    private var musicSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            GroupBox("Now Playing & Media Sources") {
-                VStack(alignment: .leading, spacing: 12) {
-                    Toggle("Enable Music & Now Playing Activity", isOn: $settings.enableMusic)
-
-                    Picker("Preferred Media Provider", selection: $settings.preferredMediaProvider) {
-                        ForEach(MediaProviderPreference.allCases) { provider in
-                            Text(provider.title).tag(provider)
-                        }
-                    }
-
-                    Picker("Expanded Player Layout", selection: $settings.expandedPlayerLayout) {
-                        ForEach(ExpandedPlayerLayout.allCases) { layout in
-                            Text(layout.title).tag(layout)
-                        }
-                    }
+    private var focusSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            SettingsCard {
+                VStack(spacing: 12) {
+                    settingsSwitchRow("Focus & Do Not Disturb HUD", isOn: $settings.enableFocusHUD)
                 }
-                .padding(8)
-            }
-
-            GroupBox("Visuals, Artwork & Waveform") {
-                VStack(alignment: .leading, spacing: 12) {
-                    Toggle("Show Album Artwork", isOn: $settings.showAlbumArtwork)
-                    Toggle("Ambient Artwork Glow Effect", isOn: $settings.artworkGlowEffect)
-                    Toggle("Dim & Shrink Artwork When Paused", isOn: $settings.dimArtworkOnPause)
-                    Divider()
-                    Toggle("Show Reactive Audio Waveform", isOn: $settings.showWaveform)
-
-                    Picker("Waveform Style", selection: $settings.waveformStyle) {
-                        ForEach(WaveformVisualStyle.allCases) { style in
-                            Text(style.title).tag(style)
-                        }
-                    }
-
-                    Divider()
-                    Toggle("Show Playback Transport Controls", isOn: $settings.showPlaybackControls)
-                    Toggle("Show Audio Quality & Format Badges (Lossless, Dolby Atmos, Explicit)", isOn: $settings.showAudioFormatBadges)
-                }
-                .padding(8)
-            }
-
-            GroupBox("Interactive Player Preview") {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Test Now Playing in the Dynamic Island")
-                            .font(.system(size: 12.5, weight: .semibold))
-                        Text("Loads sample metadata or refreshes Apple Music / Spotify immediately.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Button("Load Demo Track") {
-                        mediaMgr.loadInteractiveDemoTrack()
-                        coordinator.expandIsland(to: .music)
-                    }
-                    Button("Refresh Player") {
-                        Task { await mediaMgr.refreshNowPlaying() }
-                    }
-                }
-                .padding(8)
+                .padding(.vertical, 12)
             }
         }
     }
 
-    // MARK: - 5. Calendar & Weather Section
+    // MARK: - 5. Now Playing Section
 
-    private var calendarWeatherSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            GroupBox("Calendar & Schedule (EventKit)") {
-                VStack(alignment: .leading, spacing: 12) {
-                    Toggle("Enable Calendar Integration", isOn: $settings.enableCalendar)
-                    Toggle("Show Live Countdown to Next Meeting", isOn: $settings.showEventCountdown)
-                    Toggle("Show One-Click Join Button for Video Calls (Zoom, Meet, Teams)", isOn: $settings.showMeetingJoinButton)
-                    Toggle("Exclude Subscribed Calendars", isOn: $settings.excludeSubscribedCalendars)
-                        .onChange(of: settings.excludeSubscribedCalendars) { _, _ in
-                            calendarMgr.refreshAll()
-                        }
-                    Toggle("Include Declined Events", isOn: $settings.showDeclinedEvents)
-                        .onChange(of: settings.showDeclinedEvents) { _, _ in
-                            calendarMgr.refreshAll()
-                        }
-
-                    Divider()
-
+    private var nowPlayingSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            SettingsCard {
+                VStack(spacing: 12) {
+                    settingsSwitchRow("Enable Now Playing Live Activity", isOn: $settings.enableMusic)
+                    CardDivider()
                     HStack {
-                        Text("Calendar Permission: \(calendarMgr.permissionStatusLabel)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        Text("Media Source")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.white.opacity(0.90))
                         Spacer()
-                        if !calendarMgr.hasCalendarAccess {
-                            Button("Grant Calendar Access") {
-                                Task { _ = await calendarMgr.requestAccess() }
-                            }
-                            .controlSize(.small)
-                        } else {
-                            Button("Refresh Events") {
-                                calendarMgr.refreshAll()
-                            }
-                            .controlSize(.small)
-                        }
-                    }
-
-                    if !calendarMgr.availableCalendars.isEmpty {
-                        Divider()
-                        Text("Visible Calendars (Leave all checked to show all):")
-                            .font(.caption.weight(.semibold))
-                        ForEach(calendarMgr.availableCalendars) { cal in
-                            let isSelected = settings.selectedCalendarIDs.isEmpty || settings.selectedCalendarIDs.contains(cal.id)
-                            HStack(spacing: 8) {
-                                Circle()
-                                    .fill(cal.color)
-                                    .frame(width: 8, height: 8)
-                                Toggle("\(cal.title) (\(cal.sourceTitle))", isOn: Binding(
-                                    get: { isSelected },
-                                    set: { enabled in
-                                        var current = settings.selectedCalendarIDs.isEmpty
-                                            ? calendarMgr.availableCalendars.map { $0.id }
-                                            : settings.selectedCalendarIDs
-                                        if enabled {
-                                            if !current.contains(cal.id) { current.append(cal.id) }
-                                        } else {
-                                            current.removeAll { $0 == cal.id }
-                                        }
-                                        settings.selectedCalendarIDs = current
-                                        calendarMgr.refreshAll()
-                                    }
-                                ))
+                        Picker("", selection: $settings.preferredMediaProvider) {
+                            ForEach(MediaProviderPreference.allCases) { p in
+                                Text(p.title).tag(p)
                             }
                         }
+                        .labelsHidden()
+                        .frame(width: 200)
                     }
+                    .padding(.horizontal, 14)
+                    CardDivider()
+                    HStack {
+                        Text("Color Accent")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.white.opacity(0.90))
+                        Spacer()
+                        Picker("", selection: $settings.accentColorPreset) {
+                            ForEach(AccentColorPreset.allCases) { preset in
+                                Text(preset.title).tag(preset)
+                            }
+                        }
+                        .labelsHidden()
+                        .frame(width: 200)
+                    }
+                    .padding(.horizontal, 14)
                 }
-                .padding(8)
+                .padding(.vertical, 12)
             }
 
-            GroupBox("Weather Integration") {
-                VStack(alignment: .leading, spacing: 12) {
-                    Toggle("Enable Weather Widget", isOn: $settings.enableWeather)
-                    Toggle("Show Weather Summary on Empty Calendar Days", isOn: $settings.showWeatherOnEmptyCalendarDay)
+            SettingsCard {
+                VStack(spacing: 12) {
+                    settingsSwitchRow("Show Album Artwork", isOn: $settings.showAlbumArtwork)
+                    CardDivider()
+                    settingsSwitchRow("Dim & Shrink Artwork When Paused", isOn: $settings.dimArtworkOnPause)
+                    CardDivider()
+                    settingsSwitchRow("Show Reactive Audio Waveform", isOn: $settings.showWaveform)
+                    CardDivider()
+                    settingsSwitchRow("Show Lossless, Dolby Atmos & Explicit Badges", isOn: $settings.showAudioFormatBadges)
+                    CardDivider()
+                    settingsSwitchRow("Duo Mode (Split Music + Calendar/Weather)", isOn: $settings.enableDuoMode)
+                }
+                .padding(.vertical, 12)
+            }
+        }
+    }
 
-                    Picker("Temperature Unit", selection: $settings.temperatureUnit) {
-                        ForEach(TemperatureUnit.allCases) { unit in
-                            Text(unit.title).tag(unit)
-                        }
-                    }
+    // MARK: - 6. Calendar Section
 
+    private var calendarSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            SettingsCard {
+                VStack(spacing: 12) {
+                    settingsSwitchRow("Enable Calendar Live Activity", isOn: $settings.enableCalendar)
+                    CardDivider()
+                    settingsSwitchRow("Show Live Countdown to Next Meeting", isOn: $settings.showEventCountdown)
+                    CardDivider()
+                    settingsSwitchRow("One-Click Join Button (Zoom, Meet, Teams, FaceTime)", isOn: $settings.showMeetingJoinButton)
+                    CardDivider()
+                    settingsSwitchRow("Exclude Subscribed Calendars", isOn: $settings.excludeSubscribedCalendars)
+                }
+                .padding(.vertical, 12)
+            }
+        }
+    }
+
+    // MARK: - 7. Weather Section
+
+    private var weatherSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            SettingsCard {
+                VStack(spacing: 12) {
+                    settingsSwitchRow("Enable Weather Integration", isOn: $settings.enableWeather)
+                    CardDivider()
                     HStack {
-                        Text("Custom City (Optional):")
-                        TextField("Automatic (Current Location / Timezone)", text: $settings.customWeatherCity)
+                        Text("Temperature Unit")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.white.opacity(0.90))
+                        Spacer()
+                        Picker("", selection: $settings.temperatureUnit) {
+                            ForEach(TemperatureUnit.allCases) { unit in
+                                Text(unit.title).tag(unit)
+                            }
+                        }
+                        .labelsHidden()
+                        .frame(width: 170)
+                    }
+                    .padding(.horizontal, 14)
+                    CardDivider()
+                    HStack(spacing: 8) {
+                        Text("Custom City")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.white.opacity(0.90))
+                        Spacer()
+                        TextField("Automatic", text: $settings.customWeatherCity)
                             .textFieldStyle(.roundedBorder)
+                            .frame(width: 150)
                             .onSubmit {
                                 Task { await weatherMgr.refreshWeather(force: true) }
                             }
                         Button("Update") {
                             Task { await weatherMgr.refreshWeather(force: true) }
                         }
+                        .buttonStyle(SecondaryCardButtonStyle())
                     }
+                    .padding(.horizontal, 14)
                 }
-                .padding(8)
+                .padding(.vertical, 12)
             }
         }
     }
 
-    // MARK: - 6. System HUDs Section
+    // MARK: - 8. Lock Screen Section
 
-    private var systemHUDsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            GroupBox("System Event HUD Toggles") {
-                VStack(alignment: .leading, spacing: 10) {
-                    Toggle("Volume & Mute HUD", isOn: $settings.enableVolumeHUD)
-                    Toggle("Display Brightness HUD", isOn: $settings.enableBrightnessHUD)
-                    Toggle("Battery Level & Low Power Mode HUD", isOn: $settings.enableBatteryHUD)
-                    Toggle("Charger Connected / Disconnected HUD", isOn: $settings.enableChargingNotifications)
-                    Toggle("Bluetooth & AirPods Connectivity HUD", isOn: $settings.enableConnectivityHUD)
-                    Toggle("Audio Output Device Changes HUD", isOn: $settings.enableAudioDeviceHUD)
-                    Toggle("Focus Mode Status HUD", isOn: $settings.enableFocusHUD)
-                    Toggle("Lock / Unlock Transition Animation", isOn: $settings.enableLockScreenAnimation)
-                    Toggle("Hide Sensitive Schedule Details When Locked", isOn: $settings.hideSensitiveContentWhenLocked)
+    private var lockScreenSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            SettingsCard {
+                VStack(spacing: 12) {
+                    settingsSwitchRow("Lock & Unlock Notch Animation", isOn: $settings.enableLockScreenAnimation)
+                    CardDivider()
+                    settingsSwitchRow("Hide Sensitive Calendar Titles While Locked", isOn: $settings.hideSensitiveContentWhenLocked)
                 }
-                .padding(8)
-            }
-
-            GroupBox("HUD Style & Timing") {
-                VStack(alignment: .leading, spacing: 12) {
-                    Toggle("Elastic Spring Overshoot on HUD Pop", isOn: $settings.enableHUDOvershoot)
-                    Toggle("Show Percentage Value on Volume & Brightness HUDs", isOn: $settings.showHUDPercentageText)
-
-                    HStack {
-                        Text("QuickPeek Notification Duration")
-                        Spacer()
-                        Slider(value: $settings.quickPeekDuration, in: 1.5...6.0, step: 0.5)
-                            .frame(width: 200)
-                        Text(String(format: "%.1fs", settings.quickPeekDuration))
-                            .font(.caption.monospacedDigit())
-                            .frame(width: 48, alignment: .trailing)
-                    }
-                }
-                .padding(8)
-            }
-
-            GroupBox("Interactive HUD Test Bench") {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Click any button below to preview the live Dynamic Island HUD animation immediately:")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    HStack(spacing: 8) {
-                        Button("Test Volume HUD") {
-                            volumeMgr.emitVolumeHUD()
-                        }
-                        Button("Test Brightness HUD") {
-                            brightnessMgr.emitBrightnessHUD()
-                        }
-                        Button("Test Charger HUD") {
-                            coordinator.presentSystemHUD(
-                                SystemHUDPayload(
-                                    kind: .batteryCharging,
-                                    title: "Charging Connected",
-                                    subtitle: "\(batteryMgr.state.percentage)% Battery",
-                                    symbolName: "battery.100percent.bolt",
-                                    progress: Double(batteryMgr.state.percentage) / 100.0,
-                                    valueText: "\(batteryMgr.state.percentage)%",
-                                    tintColorName: "green"
-                                )
-                            )
-                        }
-                    }
-
-                    HStack(spacing: 8) {
-                        Button("Test AirPods Pro HUD") {
-                            coordinator.presentSystemHUD(
-                                SystemHUDPayload(
-                                    kind: .connectivity,
-                                    title: "AirPods Pro",
-                                    subtitle: "Connected • 94% Battery",
-                                    symbolName: "airpodspro",
-                                    progress: 0.94,
-                                    valueText: "94%",
-                                    tintColorName: "cyan"
-                                )
-                            )
-                        }
-                        Button("Test Focus HUD") {
-                            focusMgr.cycleFocusProfile()
-                        }
-                        Button("Test QuickPeek Banner") {
-                            coordinator.enqueueQuickPeek(
-                                QuickPeekNotification(
-                                    category: .calendar,
-                                    title: "Design Review Sync",
-                                    subtitle: "Starts in 4m • Google Meet",
-                                    badgeText: "JOIN",
-                                    symbolName: "video.fill",
-                                    accentColor: "cyan",
-                                    duration: settings.quickPeekDuration
-                                )
-                            )
-                        }
-                    }
-                }
-                .padding(8)
+                .padding(.vertical, 12)
             }
         }
     }
 
-    // MARK: - 7. Permissions Section
+    // MARK: - 9. Gestures Section
+
+    private var gesturesSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            SettingsCard {
+                VStack(spacing: 12) {
+                    settingsSwitchRow("Expand Island on Cursor Hover", isOn: $settings.expandOnHover)
+                    CardDivider()
+                    settingsSwitchRow("Expand or Collapse on Click", isOn: $settings.expandOnClick)
+                    CardDivider()
+                    settingsSwitchRow("Dismiss When Clicking Outside", isOn: $settings.clickOutsideToDismiss)
+                    CardDivider()
+                    settingsSwitchRow("Two-Finger Trackpad Swipes", isOn: $settings.enableSwipeGestures)
+                    CardDivider()
+                    settingsSwitchRow("Natural Horizontal Swipe Direction", isOn: $settings.naturalSwipeDirection)
+                }
+                .padding(.vertical, 12)
+            }
+        }
+    }
+
+    // MARK: - 10. Permissions Section
 
     private var permissionsSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            permissionRow(
+        VStack(alignment: .leading, spacing: 12) {
+            permissionCard(
                 title: "Calendars (EventKit)",
-                description: "Used to display upcoming events, meeting countdowns, and the monthly calendar grid.",
-                status: calendarMgr.permissionStatusLabel,
+                subtitle: calendarMgr.permissionStatusLabel,
                 isGranted: calendarMgr.hasCalendarAccess,
-                actionTitle: calendarMgr.hasCalendarAccess ? "Open Settings" : "Request Access"
+                actionTitle: calendarMgr.hasCalendarAccess ? "Open Settings" : "Grant Access"
             ) {
                 Task {
                     if !calendarMgr.hasCalendarAccess {
@@ -725,20 +981,18 @@ public struct SettingsView: View {
                 }
             }
 
-            permissionRow(
+            permissionCard(
                 title: "Location Services (Weather)",
-                description: "Optional. Used to fetch accurate local weather conditions. Falls back to city or timezone if declined.",
-                status: weatherMgr.permissionStatusLabel,
+                subtitle: weatherMgr.permissionStatusLabel,
                 isGranted: weatherMgr.authorizationStatus == .authorized || weatherMgr.authorizationStatus == .authorizedAlways,
                 actionTitle: "Request Location"
             ) {
                 weatherMgr.requestLocationPermission()
             }
 
-            permissionRow(
-                title: "Media Automation (Apple Events)",
-                description: "Used to read song artwork and control playback in Apple Music and Spotify.",
-                status: "Contextual (Prompted when Music/Spotify is running)",
+            permissionCard(
+                title: "Media Automation (Apple Music & Spotify)",
+                subtitle: "Prompted automatically when controlling playback",
                 isGranted: true,
                 actionTitle: "Automation Settings"
             ) {
@@ -746,104 +1000,149 @@ public struct SettingsView: View {
                     NSWorkspace.shared.open(url)
                 }
             }
-
-            permissionRow(
-                title: "Accessibility (Optional)",
-                description: "Optional. Only needed if you want enhanced global media key interception on external keyboards.",
-                status: isAccessibilityTrusted ? "Trusted" : "Optional (Not Required for Core Features)",
-                isGranted: isAccessibilityTrusted,
-                actionTitle: "Open Accessibility"
-            ) {
-                let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
-                isAccessibilityTrusted = AXIsProcessTrustedWithOptions(options)
-            }
         }
     }
 
-    private func permissionRow(
+    private func permissionCard(
         title: String,
-        description: String,
-        status: String,
+        subtitle: String,
         isGranted: Bool,
         actionTitle: String,
         action: @escaping () -> Void
     ) -> some View {
-        GroupBox {
-            HStack(alignment: .center, spacing: 14) {
-                Image(systemName: isGranted ? "checkmark.shield.fill" : "exclamationmark.shield.fill")
-                    .font(.system(size: 22))
-                    .foregroundStyle(isGranted ? .green : .orange)
+        SettingsCard {
+            HStack(spacing: 12) {
+                Image(systemName: isGranted ? "checkmark.circle.fill" : "circle.dashed")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(isGranted ? switchMint : .orange)
 
-                VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(.system(size: 13.5, weight: .bold))
-                    Text(description)
-                        .font(.system(size: 11.5))
-                        .foregroundStyle(.secondary)
-                    Text("Status: \(status)")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(isGranted ? .green : .secondary)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white)
+                    Text(subtitle)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.white.opacity(0.50))
                 }
 
                 Spacer()
 
                 Button(actionTitle, action: action)
+                    .buttonStyle(SecondaryCardButtonStyle())
             }
-            .padding(8)
+            .padding(14)
         }
     }
 
-    // MARK: - 8. About Section
+    // MARK: - 11. About Section
 
     private var aboutSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            GroupBox {
-                HStack(spacing: 16) {
+        VStack(alignment: .leading, spacing: 14) {
+            SettingsCard {
+                HStack(spacing: 14) {
                     Image(nsImage: NSApp.applicationIconImage)
                         .resizable()
-                        .frame(width: 64, height: 64)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .frame(width: 52, height: 52)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 3) {
                         Text("NotchFlow")
-                            .font(.system(size: 22, weight: .bold, design: .rounded))
-                        Text("Version 1.0.0 (Build 1) • Native macOS Swift & AppKit")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(.secondary)
-                        Text("Created by Dillon Nagar")
-                            .font(.system(size: 12.5, weight: .semibold))
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(.white)
+                        Text("Version 1.1.0 • Native macOS Dynamic Island")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.white.opacity(0.58))
+                        Text("100% Free & Open Source (MIT License) • Zero Telemetry")
+                            .font(.system(size: 11))
+                            .foregroundStyle(switchMint)
                     }
                     Spacer()
-
-                    if let repoURL = URL(string: "https://github.com/Manateek1/NotchFlow") {
-                        Link("GitHub Repository", destination: repoURL)
-                            .buttonStyle(.borderedProminent)
-                    }
                 }
-                .padding(10)
-            }
-
-            GroupBox("Privacy & Architecture") {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Zero Telemetry & 100% Local Execution")
-                        .font(.system(size: 13, weight: .bold))
-                    Text("NotchFlow runs locally on your Mac with zero analytics, zero tracking, and no required accounts. Calendar events, media playback state, and system metrics never leave your device. Weather forecasts are fetched anonymously via Open-Meteo.")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
-                }
-                .padding(8)
-            }
-
-            GroupBox("Open Source License & Disclaimer") {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Released under the MIT License • Copyright © 2026 Dillon Nagar")
-                        .font(.system(size: 12.5, weight: .semibold))
-                    Text("NotchFlow is an independent open-source project and is not affiliated with, endorsed by, or sponsored by Apple Inc. or Alcove.")
-                        .font(.system(size: 11.5))
-                        .foregroundStyle(.secondary)
-                }
-                .padding(8)
+                .padding(16)
             }
         }
+    }
+
+    // MARK: - Reusable Row Helpers
+
+    private func settingsSwitchRow(_ title: String, subtitle: String? = nil, isOn: Binding<Bool>) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.90))
+                if let subtitle {
+                    Text(subtitle)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.white.opacity(0.45))
+                }
+            }
+            Spacer()
+            Toggle("", isOn: isOn)
+                .labelsHidden()
+                .toggleStyle(.switch)
+        }
+        .padding(.horizontal, 14)
+    }
+}
+
+// MARK: - Reusable Native macOS Settings Card Components
+
+private struct SettingsCard<Content: View>: View {
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        content
+            .background(
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    .fill(Color.white.opacity(0.055))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.09), lineWidth: 0.75)
+            )
+    }
+}
+
+private struct CardDivider: View {
+    var body: some View {
+        Rectangle()
+            .fill(Color.white.opacity(0.08))
+            .frame(height: 0.5)
+            .padding(.horizontal, 14)
+    }
+}
+
+private struct HeaderPillButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 11.5, weight: .medium))
+            .foregroundStyle(.white.opacity(0.88))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(Color.white.opacity(configuration.isPressed ? 0.18 : 0.10))
+            )
+    }
+}
+
+private struct SecondaryCardButtonStyle: ButtonStyle {
+    var isDestructive: Bool = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(isDestructive ? Color(red: 0.98, green: 0.42, blue: 0.42) : .white.opacity(0.88))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(Color.white.opacity(configuration.isPressed ? 0.15 : 0.08))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.10), lineWidth: 0.5)
+            )
     }
 }

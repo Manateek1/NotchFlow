@@ -34,10 +34,10 @@ public enum IslandActivityKind: String, CaseIterable, Codable, Identifiable, Sen
         case .calendar: return "Calendar"
         case .weather: return "Weather"
         case .battery: return "Battery"
-        case .connectivity: return "Audio & Connectivity"
-        case .focus: return "Focus Mode"
-        case .systemHUD: return "System HUD"
-        case .lockScreen: return "Lock State"
+        case .connectivity: return "Connectivity"
+        case .focus: return "Focus"
+        case .systemHUD: return "Controls"
+        case .lockScreen: return "Lock Screen"
         case .minimal: return "Minimal Idle"
         }
     }
@@ -71,6 +71,24 @@ public enum IslandActivityKind: String, CaseIterable, Codable, Identifiable, Sen
     }
 }
 
+// MARK: - HUD Visual Theme (White / Accent / Glow)
+
+public enum HUDBarTheme: String, CaseIterable, Codable, Identifiable, Sendable {
+    case white = "white"
+    case accent = "accent"
+    case glow = "glow"
+
+    public var id: String { rawValue }
+
+    public var title: String {
+        switch self {
+        case .white: return "White"
+        case .accent: return "Accent"
+        case .glow: return "Glow"
+        }
+    }
+}
+
 // MARK: - Appearance & Behavior Enums
 
 public enum IslandStyleMode: String, CaseIterable, Codable, Identifiable, Sendable {
@@ -82,9 +100,9 @@ public enum IslandStyleMode: String, CaseIterable, Codable, Identifiable, Sendab
 
     public var title: String {
         switch self {
-        case .automatic: return "Automatic (Detect Hardware Notch)"
-        case .realNotch: return "Notch Hugger Mode"
-        case .simulatedPill: return "Floating Pill Mode (Notchless Style)"
+        case .automatic: return "Automatic (Hardware Notch)"
+        case .realNotch: return "Notch Mode (Top-Anchored)"
+        case .simulatedPill: return "Floating Pill Mode"
         }
     }
 }
@@ -98,17 +116,25 @@ public enum AnimationSpeedPreset: String, CaseIterable, Codable, Identifiable, S
 
     public var title: String {
         switch self {
-        case .smooth: return "Smooth (Fluid Spring)"
-        case .fast: return "Fast (Snappy)"
-        case .instant: return "Instant (Minimal Motion)"
+        case .smooth: return "Smooth"
+        case .fast: return "Fast"
+        case .instant: return "Instant"
+        }
+    }
+
+    public var symbolName: String {
+        switch self {
+        case .smooth: return "tortoise.fill"
+        case .fast: return "hare.fill"
+        case .instant: return "bolt.fill"
         }
     }
 
     public var response: Double {
         switch self {
-        case .smooth: return 0.36
-        case .fast: return 0.22
-        case .instant: return 0.08
+        case .smooth: return 0.38
+        case .fast: return 0.24
+        case .instant: return 0.10
         }
     }
 
@@ -132,51 +158,51 @@ public enum AppearanceThemeMode: String, CaseIterable, Codable, Identifiable, Se
         switch self {
         case .darkOnly: return "OLED Pitch Black (Notch Native)"
         case .system: return "Follow System Appearance"
-        case .adaptiveGlass: return "Translucent Obsidian Glass"
+        case .adaptiveGlass: return "Obsidian Translucent"
         }
     }
 }
 
 public enum AccentColorPreset: String, CaseIterable, Codable, Identifiable, Sendable {
+    case dynamicArtwork = "dynamicArtwork"
     case cyanFlow = "cyanFlow"
-    case electricIndigo = "electricIndigo"
     case emeraldPulse = "emeraldPulse"
     case amberGlow = "amberGlow"
+    case electricIndigo = "electricIndigo"
     case roseQuartz = "roseQuartz"
-    case dynamicArtwork = "dynamicArtwork"
 
     public var id: String { rawValue }
 
     public var title: String {
         switch self {
-        case .cyanFlow: return "Cyan Flow"
-        case .electricIndigo: return "Electric Indigo"
-        case .emeraldPulse: return "Emerald Pulse"
-        case .amberGlow: return "Amber Glow"
-        case .roseQuartz: return "Rose Quartz"
         case .dynamicArtwork: return "Dynamic Album Artwork"
+        case .cyanFlow: return "Glacier Blue"
+        case .emeraldPulse: return "Teal Mint"
+        case .amberGlow: return "Warm Amber"
+        case .electricIndigo: return "Soft Indigo"
+        case .roseQuartz: return "Coral Rose"
         }
     }
 
     public var primaryColor: Color {
         switch self {
-        case .cyanFlow: return Color(red: 0.20, green: 0.82, blue: 0.98)
-        case .electricIndigo: return Color(red: 0.48, green: 0.42, blue: 0.98)
-        case .emeraldPulse: return Color(red: 0.18, green: 0.88, blue: 0.62)
-        case .amberGlow: return Color(red: 0.98, green: 0.68, blue: 0.20)
-        case .roseQuartz: return Color(red: 0.96, green: 0.38, blue: 0.58)
-        case .dynamicArtwork: return Color(red: 0.28, green: 0.78, blue: 0.98)
+        case .dynamicArtwork: return Color(red: 0.44, green: 0.68, blue: 0.82)
+        case .cyanFlow: return Color(red: 0.38, green: 0.72, blue: 0.90)
+        case .emeraldPulse: return Color(red: 0.24, green: 0.80, blue: 0.70)
+        case .amberGlow: return Color(red: 0.96, green: 0.62, blue: 0.32)
+        case .electricIndigo: return Color(red: 0.56, green: 0.52, blue: 0.96)
+        case .roseQuartz: return Color(red: 0.94, green: 0.44, blue: 0.56)
         }
     }
 
     public var secondaryColor: Color {
         switch self {
-        case .cyanFlow: return Color(red: 0.38, green: 0.46, blue: 0.98)
-        case .electricIndigo: return Color(red: 0.76, green: 0.36, blue: 0.96)
-        case .emeraldPulse: return Color(red: 0.12, green: 0.72, blue: 0.82)
-        case .amberGlow: return Color(red: 0.96, green: 0.42, blue: 0.24)
-        case .roseQuartz: return Color(red: 0.68, green: 0.34, blue: 0.94)
-        case .dynamicArtwork: return Color(red: 0.56, green: 0.42, blue: 0.96)
+        case .dynamicArtwork: return Color(red: 0.28, green: 0.46, blue: 0.64)
+        case .cyanFlow: return Color(red: 0.24, green: 0.48, blue: 0.78)
+        case .emeraldPulse: return Color(red: 0.14, green: 0.56, blue: 0.52)
+        case .amberGlow: return Color(red: 0.88, green: 0.38, blue: 0.22)
+        case .electricIndigo: return Color(red: 0.38, green: 0.32, blue: 0.78)
+        case .roseQuartz: return Color(red: 0.68, green: 0.28, blue: 0.48)
         }
     }
 }
@@ -190,25 +216,25 @@ public enum IdleVisibilityMode: String, CaseIterable, Codable, Identifiable, Sen
 
     public var title: String {
         switch self {
-        case .alwaysVisible: return "Always Show Compact Island"
-        case .minimalPill: return "Minimal Notch Hugger When Idle"
-        case .autoHideWhenInactive: return "Auto-Hide When No Activity"
+        case .alwaysVisible: return "Always Show Active Island"
+        case .minimalPill: return "Hug Notch When Idle"
+        case .autoHideWhenInactive: return "Auto-Hide When Inactive"
         }
     }
 }
 
 public enum IslandCornerStyle: String, CaseIterable, Codable, Identifiable, Sendable {
-    case continuousSquircle = "continuousSquircle"
     case classicNotch = "classicNotch"
+    case continuousSquircle = "continuousSquircle"
     case capsulePill = "capsulePill"
 
     public var id: String { rawValue }
 
     public var title: String {
         switch self {
+        case .classicNotch: return "Hardware Notch Curve (Default)"
         case .continuousSquircle: return "Continuous Squircle"
-        case .classicNotch: return "Top-Anchored Notch Flare"
-        case .capsulePill: return "Full Capsule Pill"
+        case .capsulePill: return "Floating Capsule Pill"
         }
     }
 }
@@ -223,7 +249,7 @@ public enum MiddleClickAction: String, CaseIterable, Codable, Identifiable, Send
 
     public var title: String {
         switch self {
-        case .cycleActivities: return "Cycle Active Island Widget"
+        case .cycleActivities: return "Switch Active Widget"
         case .playPauseMedia: return "Play / Pause Media"
         case .toggleExpand: return "Expand / Collapse Island"
         case .none: return "Do Nothing"
@@ -259,7 +285,7 @@ public enum WaveformVisualStyle: String, CaseIterable, Codable, Identifiable, Se
 
     public var title: String {
         switch self {
-        case .bars: return "Harmonic Equalizer Bars"
+        case .bars: return "Dynamic Island Bars"
         case .liquidWave: return "Fluid Sine Wave"
         case .spectrumDots: return "Spectrum Matrix"
         case .minimalPulse: return "Minimal Beat Pulse"
@@ -276,7 +302,7 @@ public enum ExpandedPlayerLayout: String, CaseIterable, Codable, Identifiable, S
 
     public var title: String {
         switch self {
-        case .standard: return "Standard Studio Player"
+        case .standard: return "Apple Dynamic Island Studio"
         case .cinemaArtwork: return "Large Artwork Showcase"
         case .compactControls: return "Compact Deck"
         }
@@ -338,7 +364,7 @@ public struct SystemHUDPayload: Identifiable, Equatable, Sendable {
         symbolName: String,
         progress: Double? = nil,
         valueText: String? = nil,
-        tintColorName: String = "cyan",
+        tintColorName: String = "white",
         timestamp: Date = Date()
     ) {
         self.id = id
@@ -354,15 +380,15 @@ public struct SystemHUDPayload: Identifiable, Equatable, Sendable {
 
     public var tintColor: Color {
         switch tintColorName {
-        case "green": return .green
-        case "orange": return .orange
-        case "red": return .red
-        case "yellow": return .yellow
-        case "purple": return .purple
-        case "indigo": return .indigo
-        case "blue": return .blue
+        case "green": return Color(red: 0.29, green: 0.87, blue: 0.50)
+        case "orange": return Color(red: 0.98, green: 0.58, blue: 0.24)
+        case "red": return Color(red: 0.96, green: 0.34, blue: 0.34)
+        case "yellow": return Color(red: 0.98, green: 0.80, blue: 0.24)
+        case "purple": return Color(red: 0.68, green: 0.52, blue: 0.98)
+        case "indigo": return Color(red: 0.48, green: 0.52, blue: 0.98)
+        case "blue": return Color(red: 0.38, green: 0.72, blue: 0.98)
         case "white": return .white
-        default: return Color(red: 0.22, green: 0.82, blue: 0.98)
+        default: return .white
         }
     }
 }
@@ -387,8 +413,8 @@ public struct QuickPeekNotification: Identifiable, Equatable, Sendable {
         subtitle: String,
         badgeText: String? = nil,
         symbolName: String,
-        accentColor: String = "cyan",
-        duration: TimeInterval = 3.2,
+        accentColor: String = "white",
+        duration: TimeInterval = 2.8,
         createdAt: Date = Date()
     ) {
         self.id = id

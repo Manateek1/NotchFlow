@@ -98,7 +98,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         toggleExpandItem.target = self
         menu.addItem(toggleExpandItem)
 
-        let cycleItem = NSMenuItem(title: "Cycle Island Activity", action: #selector(menuCycleActivity), keyEquivalent: "k")
+        let cycleItem = NSMenuItem(title: "Switch Island Activity", action: #selector(menuCycleActivity), keyEquivalent: "k")
         cycleItem.target = self
         menu.addItem(cycleItem)
 
@@ -126,17 +126,17 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         demoItem.target = self
         menu.addItem(demoItem)
 
-        let testHUDItem = NSMenuItem(title: "Trigger Sample Volume HUD", action: #selector(menuTestVolumeHUD), keyEquivalent: "")
+        let testHUDItem = NSMenuItem(title: "Trigger Volume Glow HUD", action: #selector(menuTestVolumeHUD), keyEquivalent: "")
         testHUDItem.target = self
         menu.addItem(testHUDItem)
 
         menu.addItem(.separator())
 
-        let settingsItem = NSMenuItem(title: "NotchFlow Settings...", action: #selector(menuOpenSettings), keyEquivalent: ",")
+        let settingsItem = NSMenuItem(title: "Settings...", action: #selector(menuOpenSettings), keyEquivalent: ",")
         settingsItem.target = self
         menu.addItem(settingsItem)
 
-        let onboardingItem = NSMenuItem(title: "Welcome & Onboarding...", action: #selector(menuOpenOnboarding), keyEquivalent: "")
+        let onboardingItem = NSMenuItem(title: "Welcome Guide...", action: #selector(menuOpenOnboarding), keyEquivalent: "")
         onboardingItem.target = self
         menu.addItem(onboardingItem)
 
@@ -203,15 +203,17 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        let contentView = SettingsView { [weak self] in
+        let contentView = SettingsView(initialSection: .general) { [weak self] in
             self?.openOnboardingWindow()
         }
         let hosting = NSHostingController(rootView: contentView)
         let window = NSWindow(contentViewController: hosting)
-        window.title = "NotchFlow Settings"
+        window.title = "NotchFlow"
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
         window.appearance = NSAppearance(named: .darkAqua)
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
-        window.setContentSize(NSSize(width: 780, height: 560))
+        window.setContentSize(NSSize(width: 670, height: 610))
         window.center()
         window.isReleasedWhenClosed = false
         window.makeKeyAndOrderFront(nil)
@@ -233,10 +235,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         let hosting = NSHostingController(rootView: contentView)
         let window = NSWindow(contentViewController: hosting)
         window.title = "Welcome to NotchFlow"
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
         window.appearance = NSAppearance(named: .darkAqua)
         window.styleMask = [.titled, .closable, .fullSizeContentView]
-        window.titlebarAppearsTransparent = true
-        window.setContentSize(NSSize(width: 560, height: 470))
+        window.setContentSize(NSSize(width: 540, height: 450))
         window.center()
         window.isReleasedWhenClosed = false
         window.makeKeyAndOrderFront(nil)
@@ -251,88 +254,116 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         try? fm.createDirectory(atPath: directoryPath, withIntermediateDirectories: true)
 
         let settings = SettingsStore.shared
-        settings.islandStyleMode = .simulatedPill
-        settings.coloredOutline = true
-        MediaManager.shared.loadInteractiveDemoTrack()
+        settings.islandStyleMode = .realNotch
+        settings.cornerStyle = .classicNotch
+        settings.showContrastOutline = false
+        settings.coloredOutline = false
+        settings.hudBarTheme = .glow
+        settings.hudHideLabel = true
+        settings.showHUDPercentageText = false
+        MediaManager.shared.loadInteractiveDemoTrack(index: 0)
 
-        // 1. Expanded Music Player Island Showcase
+        let wallpaperGradient = LinearGradient(
+            colors: [
+                Color(red: 0.98, green: 0.56, blue: 0.38),
+                Color(red: 0.94, green: 0.44, blue: 0.42),
+                Color(red: 0.88, green: 0.30, blue: 0.44)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+
+        // 1. Expanded Now Playing Studio (Flush at y = 0 with Concave Top Ears)
         IslandCoordinator.shared.expandIsland(to: .music)
-        let musicBanner = ZStack {
-            LinearGradient(
-                colors: [
-                    Color(red: 0.05, green: 0.07, blue: 0.14),
-                    Color(red: 0.09, green: 0.12, blue: 0.24),
-                    Color(red: 0.04, green: 0.05, blue: 0.10)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            VStack(spacing: 16) {
-                IslandContainerView(targetScreen: NSScreen.main, onOpenSettings: {})
-                    .frame(width: 500, height: 265)
-                Text("NotchFlow — Expanded Now Playing Studio & Live Waveform")
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.75))
-            }
-            .padding(24)
+        let musicShowcase = ZStack(alignment: .top) {
+            wallpaperGradient
+            IslandContainerView(targetScreen: NSScreen.main, onOpenSettings: {})
+                .frame(width: 680, height: 340, alignment: .top)
         }
-        renderSwiftUIViewToPNG(musicBanner, size: CGSize(width: 680, height: 360), to: "\(directoryPath)/island-music-expanded.png")
+        renderSwiftUIViewToPNG(musicShowcase, size: CGSize(width: 680, height: 340), to: "\(directoryPath)/island-music-expanded.png")
 
-        // 2. Expanded Calendar & Weather Island Showcase
+        // 2. Expanded Calendar & Weather Studio (Flush at y = 0 with Concave Top Ears)
         IslandCoordinator.shared.expandIsland(to: .calendar)
-        let calendarBanner = ZStack {
-            LinearGradient(
-                colors: [
-                    Color(red: 0.05, green: 0.07, blue: 0.14),
-                    Color(red: 0.08, green: 0.14, blue: 0.22),
-                    Color(red: 0.04, green: 0.05, blue: 0.10)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            VStack(spacing: 16) {
-                IslandContainerView(targetScreen: NSScreen.main, onOpenSettings: {})
-                    .frame(width: 520, height: 305)
-                Text("NotchFlow — Interactive Monthly Calendar & Local Weather")
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.75))
-            }
-            .padding(24)
+        let calendarShowcase = ZStack(alignment: .top) {
+            wallpaperGradient
+            IslandContainerView(targetScreen: NSScreen.main, onOpenSettings: {})
+                .frame(width: 680, height: 360, alignment: .top)
         }
-        renderSwiftUIViewToPNG(calendarBanner, size: CGSize(width: 680, height: 390), to: "\(directoryPath)/island-calendar-expanded.png")
+        renderSwiftUIViewToPNG(calendarShowcase, size: CGSize(width: 680, height: 360), to: "\(directoryPath)/island-calendar-expanded.png")
 
-        // 3. System Control Dashboard & HUD Showcase
-        IslandCoordinator.shared.expandIsland(to: .systemHUD)
-        let systemBanner = ZStack {
-            LinearGradient(
-                colors: [
-                    Color(red: 0.05, green: 0.07, blue: 0.14),
-                    Color(red: 0.10, green: 0.10, blue: 0.22),
-                    Color(red: 0.04, green: 0.05, blue: 0.10)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
+        // 3. System Volume Glow HUD + Expanded Control Center Showcase
+        VolumeManager.shared.isMuted = false
+        VolumeManager.shared.volume = 0.72
+        IslandCoordinator.shared.presentSystemHUD(
+            SystemHUDPayload(
+                kind: .volume,
+                title: "Volume",
+                subtitle: nil,
+                symbolName: "speaker.wave.2.fill",
+                progress: 0.78,
+                valueText: "78%",
+                tintColorName: "orange"
             )
-            VStack(spacing: 16) {
-                IslandContainerView(targetScreen: NSScreen.main, onOpenSettings: {})
-                    .frame(width: 500, height: 265)
-                Text("NotchFlow — System Controls, AirPods, Battery & Focus Mode")
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.75))
-            }
-            .padding(24)
+        )
+        IslandCoordinator.shared.withIslandAnimation {
+            // Reset overshoot immediately for crisp static snapshot
         }
-        renderSwiftUIViewToPNG(systemBanner, size: CGSize(width: 680, height: 360), to: "\(directoryPath)/island-system-controls.png")
+        let hudAndControlsShowcase = ZStack(alignment: .top) {
+            wallpaperGradient
+            VStack(spacing: 28) {
+                // Top: Flush Horizontal Volume Glow HUD
+                IslandContainerView(targetScreen: NSScreen.main, onOpenSettings: {})
+                    .frame(width: 680, height: 60, alignment: .top)
 
-        // 4. Settings Application Window
-        let settingsView = SettingsView()
-            .environment(\.colorScheme, .dark)
-        renderSwiftUIViewToPNG(settingsView, size: CGSize(width: 800, height: 560), to: "\(directoryPath)/settings-window.png")
+                // Below: Expanded Control Center Bento View
+                ExpandedSystemDashboardView(selectedTab: .systemHUD)
+                    .padding(24)
+                    .frame(width: 446)
+                    .background(Color.black)
+                    .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
+                    .shadow(color: Color.black.opacity(0.45), radius: 22, y: 10)
+            }
+        }
+        renderSwiftUIViewToPNG(hudAndControlsShowcase, size: CGSize(width: 680, height: 360), to: "\(directoryPath)/island-system-controls.png")
+
+        // 4. Native macOS Settings Window (Framed on Warm Wallpaper with Traffic Lights)
+        let settingsFramed = ZStack {
+            wallpaperGradient
+            ZStack(alignment: .topLeading) {
+                SettingsView(initialSection: .display)
+                    .frame(width: 660, height: 615)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .strokeBorder(Color.white.opacity(0.16), lineWidth: 0.75)
+                    )
+                    .shadow(color: Color.black.opacity(0.48), radius: 28, y: 14)
+
+                // Simulated macOS Window Traffic Lights
+                HStack(spacing: 8) {
+                    Circle().fill(Color(red: 1.0, green: 0.37, blue: 0.34)).frame(width: 12, height: 12)
+                    Circle().fill(Color(red: 1.0, green: 0.74, blue: 0.18)).frame(width: 12, height: 12)
+                    Circle().fill(Color(red: 0.16, green: 0.78, blue: 0.25)).frame(width: 12, height: 12)
+                }
+                .padding(.leading, 18)
+                .padding(.top, 16)
+            }
+        }
+        renderSwiftUIViewToPNG(settingsFramed, size: CGSize(width: 780, height: 685), to: "\(directoryPath)/settings-window.png")
 
         // 5. Onboarding Experience Window
-        let onboardingView = OnboardingView(onComplete: {})
-            .environment(\.colorScheme, .dark)
-        renderSwiftUIViewToPNG(onboardingView, size: CGSize(width: 560, height: 470), to: "\(directoryPath)/onboarding-window.png")
+        let onboardingFramed = ZStack {
+            wallpaperGradient
+            OnboardingView(onComplete: {})
+                .frame(width: 540, height: 450)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.16), lineWidth: 0.75)
+                )
+                .shadow(color: Color.black.opacity(0.48), radius: 28, y: 14)
+        }
+        renderSwiftUIViewToPNG(onboardingFramed, size: CGSize(width: 660, height: 530), to: "\(directoryPath)/onboarding-window.png")
     }
 
     private func renderSwiftUIViewToPNG<V: View>(_ view: V, size: CGSize, to path: String) {

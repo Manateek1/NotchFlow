@@ -8,8 +8,8 @@ import Combine
 public final class VolumeManager: ObservableObject {
     public static let shared = VolumeManager()
 
-    @Published public private(set) var volume: Double = 0.5 // 0.0 ... 1.0
-    @Published public private(set) var isMuted: Bool = false
+    @Published public var volume: Double = 0.5 // 0.0 ... 1.0
+    @Published public var isMuted: Bool = false
     @Published public private(set) var outputDeviceName: String = "Mac Speakers"
     @Published public private(set) var outputDeviceSymbol: String = "speaker.wave.2.fill"
 

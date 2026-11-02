@@ -11,98 +11,81 @@ public struct OnboardingView: View {
     @State private var currentStep: Int = 0
     public var onComplete: () -> Void
 
-    private let totalSteps = 6
+    private let totalSteps = 5
+    private let switchMint = Color(red: 0.24, green: 0.78, blue: 0.70)
 
     public init(onComplete: @escaping () -> Void) {
         self.onComplete = onComplete
     }
 
-    private var accent: Color {
-        settings.accentColorPreset.primaryColor
-    }
-
     public var body: some View {
         VStack(spacing: 0) {
-            // Top Interactive Island Preview Banner
-            ZStack {
+            // Top Simulated MacBook Bezel + Live Notch Preview Card
+            ZStack(alignment: .top) {
                 LinearGradient(
                     colors: [
-                        Color(red: 0.05, green: 0.06, blue: 0.11),
-                        Color(red: 0.09, green: 0.11, blue: 0.20)
+                        Color(red: 0.94, green: 0.52, blue: 0.36),
+                        Color(red: 0.88, green: 0.34, blue: 0.46),
+                        Color(red: 0.32, green: 0.20, blue: 0.44)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
 
-                VStack(spacing: 12) {
-                    // Simulated Notch Preview
-                    HStack(spacing: 14) {
-                        HStack(spacing: 6) {
-                            RoundedRectangle(cornerRadius: 5, style: .continuous)
-                                .fill(accent.opacity(0.3))
-                                .frame(width: 20, height: 20)
-                                .overlay(
-                                    Image(systemName: "music.note")
-                                        .font(.system(size: 10, weight: .bold))
-                                        .foregroundStyle(accent)
-                                )
-                            WaveformVisualizerView(
-                                isPlaying: true,
-                                style: settings.waveformStyle,
-                                accentColor: accent,
-                                barCount: 4,
-                                height: 14
-                            )
-                        }
-
-                        Spacer()
-                            .frame(width: 80)
-
-                        HStack(spacing: 5) {
-                            Image(systemName: "cloud.sun.fill")
-                                .font(.system(size: 11))
-                                .foregroundStyle(.yellow)
-                            Text("72°")
-                                .font(.system(size: 11, weight: .bold, design: .rounded))
-                                .foregroundStyle(.white)
-                        }
+                // Top-Anchored Hardware Notch Preview (Concave Top Ears, Pure Black, Soft Drop Shadow)
+                HStack(spacing: 0) {
+                    if let art = mediaMgr.currentTrack.artworkImage {
+                        Image(nsImage: art)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 21, height: 21)
+                            .clipShape(RoundedRectangle(cornerRadius: 5.5, style: .continuous))
+                    } else {
+                        RoundedRectangle(cornerRadius: 5.5, style: .continuous)
+                            .fill(Color.white.opacity(0.20))
+                            .frame(width: 21, height: 21)
                     }
-                    .padding(.horizontal, 16)
-                    .frame(width: 280, height: 34)
-                    .background(Color.black, in: Capsule(style: .continuous))
-                    .overlay(
-                        Capsule(style: .continuous)
-                            .strokeBorder(accent.opacity(0.45), lineWidth: 1)
+
+                    Spacer()
+                        .frame(width: 146)
+
+                    WaveformVisualizerView(
+                        isPlaying: true,
+                        style: .bars,
+                        accentColor: Color(red: 0.48, green: 0.72, blue: 0.86),
+                        barCount: 4,
+                        height: 15
                     )
-                    .shadow(color: accent.opacity(0.25), radius: 14, y: 4)
-
-                    Text("Live Dynamic Island Active at Top of Screen")
-                        .font(.system(size: 11, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.65))
                 }
+                .padding(.horizontal, 20)
+                .frame(width: 256, height: 38)
+                .background(Color.black)
+                .clipShape(NotchIslandShape(topShoulderRadius: 10, bottomCornerRadius: 15))
+                .shadow(color: Color.black.opacity(0.45), radius: 16, y: 8)
             }
-            .frame(height: 120)
+            .frame(height: 128)
+            .clipped()
 
-            // Step Content Area
+            // Main Step Content Area
             VStack(alignment: .leading, spacing: 16) {
                 stepContent(for: currentStep)
                 Spacer(minLength: 0)
             }
             .padding(28)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(Color(red: 0.08, green: 0.09, blue: 0.13))
+            .background(Color(red: 0.22, green: 0.22, blue: 0.23))
 
-            Divider()
-                .background(Color.white.opacity(0.12))
+            Rectangle()
+                .fill(Color.white.opacity(0.08))
+                .frame(height: 1)
 
-            // Footer Navigation Bar
+            // Bottom Navigation Footer
             HStack {
-                // Step Dots
                 HStack(spacing: 6) {
                     ForEach(0..<totalSteps, id: \.self) { idx in
-                        Circle()
-                            .fill(idx == currentStep ? accent : Color.white.opacity(0.25))
-                            .frame(width: 7, height: 7)
+                        Capsule(style: .continuous)
+                            .fill(idx == currentStep ? Color.white.opacity(0.90) : Color.white.opacity(0.22))
+                            .frame(width: idx == currentStep ? 16 : 6, height: 6)
                     }
                 }
 
@@ -110,35 +93,39 @@ public struct OnboardingView: View {
 
                 if currentStep > 0 {
                     Button("Back") {
-                        withAnimation(.easeInOut(duration: 0.2)) {
+                        withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
                             currentStep -= 1
                         }
                     }
+                    .buttonStyle(OnboardingPillButtonStyle(isPrimary: false))
                 }
 
-                Button("Skip Setup") {
+                Button("Skip") {
                     finishOnboarding()
                 }
-                .foregroundStyle(.white.opacity(0.65))
+                .font(.system(size: 12.5, weight: .medium))
+                .foregroundStyle(.white.opacity(0.52))
                 .buttonStyle(.plain)
                 .padding(.horizontal, 8)
 
                 Button(currentStep == totalSteps - 1 ? "Get Started" : "Continue") {
                     if currentStep < totalSteps - 1 {
-                        withAnimation(.easeInOut(duration: 0.2)) {
+                        withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
                             currentStep += 1
                         }
                     } else {
                         finishOnboarding()
                     }
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(OnboardingPillButtonStyle(isPrimary: true))
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 14)
-            .background(Color(red: 0.06, green: 0.07, blue: 0.10))
+            .background(Color(red: 0.19, green: 0.19, blue: 0.20))
         }
-        .frame(width: 560, height: 470)
+        .background(Color(red: 0.22, green: 0.22, blue: 0.23))
+        .tint(switchMint)
+        .frame(width: 540, height: 450)
         .preferredColorScheme(.dark)
     }
 
@@ -146,167 +133,166 @@ public struct OnboardingView: View {
     private func stepContent(for step: Int) -> some View {
         switch step {
         case 0:
-            VStack(alignment: .leading, spacing: 12) {
-                Label("Welcome to NotchFlow", systemImage: "sparkles")
-                    .font(.system(size: 22, weight: .bold, design: .rounded))
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Dynamic Island. Now for your Mac.")
+                    .font(.system(size: 21, weight: .bold))
+                    .foregroundStyle(.white)
 
-                Text("NotchFlow transforms your Mac's camera notch (or top bezel on notchless monitors) into an interactive, fluid Dynamic Island.")
-                    .font(.system(size: 13.5))
-                    .foregroundStyle(.secondary)
+                Text("Turns your MacBook's camera cutout into a fluid, native Dynamic Island.")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.65))
+                    .fixedSize(horizontal: false, vertical: true)
 
-                VStack(alignment: .leading, spacing: 8) {
-                    featureBullet(icon: "waveform", title: "Live Now Playing & Waveforms", detail: "Real-time playback controls, album art glow, and audio visualizers.")
-                    featureBullet(icon: "calendar.badge.clock", title: "Schedule & Meeting Countdowns", detail: "Expandable monthly calendar with 1-click video call join buttons.")
-                    featureBullet(icon: "slider.horizontal.3", title: "Sleek System HUDs & Duo Mode", detail: "Non-intrusive notch indicators for Volume, Brightness, Battery, AirPods, and Focus.")
+                VStack(alignment: .leading, spacing: 10) {
+                    featureRow(color: Color(red: 0.96, green: 0.28, blue: 0.36), icon: "play.fill", title: "Now Playing & Live Waveforms", detail: "Album artwork, dynamic color accents, and trackpad swipe controls.")
+                    featureRow(color: Color(red: 0.64, green: 0.36, blue: 0.96), icon: "sun.max.fill", title: "Sleek System HUDs", detail: "Replaces Volume, Brightness, Battery, and AirPods overlays in the notch.")
+                    featureRow(color: Color(red: 0.98, green: 0.38, blue: 0.24), icon: "calendar", title: "Calendar & Duo Mode", detail: "Upcoming meeting countdowns, monthly calendar, and 1-click call join.")
                 }
-                .padding(.top, 4)
+                .padding(.top, 2)
             }
 
         case 1:
-            VStack(alignment: .leading, spacing: 12) {
-                Label("Interacting with the Island", systemImage: "hand.tap.fill")
-                    .font(.system(size: 22, weight: .bold, design: .rounded))
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Effortless Gestures")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(.white)
 
-                Text("NotchFlow is designed to stay out of your way until you need it, without ever stealing keyboard focus from your active app.")
-                    .font(.system(size: 13.5))
-                    .foregroundStyle(.secondary)
+                Text("Hover or click the notch to expand. Use two-finger horizontal trackpad swipes on the island to skip songs or switch between Music and Calendar.")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.65))
 
-                VStack(alignment: .leading, spacing: 8) {
-                    featureBullet(icon: "cursorarrow.motionlines", title: "Hover or Click to Expand", detail: "Move your cursor over the notch or click it to open the full studio panel.")
-                    featureBullet(icon: "hand.draw.fill", title: "Two-Finger Trackpad Swipes", detail: "Swipe horizontally on the island to skip tracks or cycle widgets; swipe down to expand.")
-                    featureBullet(icon: "computermouse.fill", title: "Middle-Click & Duo Mode", detail: "Middle-click to cycle between Music, Calendar, Weather, and System controls.")
+                VStack(spacing: 10) {
+                    onboardingToggleCard("Expand automatically on cursor hover", isOn: $settings.expandOnHover)
+                    onboardingToggleCard("Enable two-finger trackpad swipe gestures", isOn: $settings.enableSwipeGestures)
+                    onboardingToggleCard("Enable Duo Mode (Music + Calendar split view)", isOn: $settings.enableDuoMode)
                 }
-
-                Toggle("Expand automatically when hovering over the island", isOn: $settings.expandOnHover)
-                    .padding(.top, 4)
             }
 
         case 2:
-            VStack(alignment: .leading, spacing: 12) {
-                Label("Music & Media Integration", systemImage: "music.note.list")
-                    .font(.system(size: 22, weight: .bold, design: .rounded))
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Customizable System HUDs")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(.white)
 
-                Text("NotchFlow connects natively to Apple Music and Spotify using macOS distributed notifications and AppleEvents when those apps are running.")
-                    .font(.system(size: 13.5))
-                    .foregroundStyle(.secondary)
+                Text("Choose how Volume, Display Brightness, and Battery indicators appear inside the notch.")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.65))
 
-                Picker("Preferred Media Player", selection: $settings.preferredMediaProvider) {
-                    ForEach(MediaProviderPreference.allCases) { p in
-                        Text(p.title).tag(p)
-                    }
+                VStack(spacing: 10) {
+                    onboardingToggleCard("Volume & Sound HUD", isOn: $settings.enableVolumeHUD)
+                    onboardingToggleCard("Display Brightness HUD", isOn: $settings.enableBrightnessHUD)
+                    onboardingToggleCard("AirPods & Battery Connection HUDs", isOn: $settings.enableConnectivityHUD)
                 }
-
-                Picker("Waveform Visualizer Style", selection: $settings.waveformStyle) {
-                    ForEach(WaveformVisualStyle.allCases) { s in
-                        Text(s.title).tag(s)
-                    }
-                }
-
-                Button("Test Interactive Demo Track in Island Now") {
-                    mediaMgr.loadInteractiveDemoTrack()
-                    coordinator.expandIsland(to: .music)
-                }
-                .controlSize(.small)
             }
 
         case 3:
-            VStack(alignment: .leading, spacing: 12) {
-                Label("Calendar & Schedule Access", systemImage: "calendar")
-                    .font(.system(size: 22, weight: .bold, design: .rounded))
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Calendar & Weather")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(.white)
 
-                Text("Grant optional Calendar access so NotchFlow can show your next upcoming meeting countdown, monthly calendar grid, and 1-click Join buttons for Zoom/Meet/Teams.")
-                    .font(.system(size: 13.5))
-                    .foregroundStyle(.secondary)
-
-                GroupBox {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("EventKit Calendar Permission")
-                                .font(.system(size: 13, weight: .bold))
-                            Text("Status: \(calendarMgr.permissionStatusLabel)")
-                                .font(.caption)
-                                .foregroundStyle(calendarMgr.hasCalendarAccess ? .green : .secondary)
-                        }
-                        Spacer()
-                        Button(calendarMgr.hasCalendarAccess ? "Granted ✓" : "Grant Calendar Access") {
-                            Task { _ = await calendarMgr.requestAccess() }
-                        }
-                        .disabled(calendarMgr.hasCalendarAccess)
-                    }
-                    .padding(6)
-                }
-
-                Text("You can skip this step if you only want Music and System HUDs.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-        case 4:
-            VStack(alignment: .leading, spacing: 12) {
-                Label("Local Weather & Units", systemImage: "cloud.sun.fill")
-                    .font(.system(size: 22, weight: .bold, design: .rounded))
-
-                Text("NotchFlow displays live local weather in Duo Mode and inside the Calendar schedule. You can enter a city name directly (no Location permission required!) or use macOS Location Services.")
-                    .font(.system(size: 13.5))
-                    .foregroundStyle(.secondary)
-
-                Picker("Temperature Unit", selection: $settings.temperatureUnit) {
-                    ForEach(TemperatureUnit.allCases) { unit in
-                        Text(unit.title).tag(unit)
-                    }
-                }
+                Text("Optionally connect your macOS Calendar to see live meeting countdowns and 1-click video call Join buttons.")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.65))
 
                 HStack {
-                    TextField("Enter City Name (or leave blank for auto)", text: $settings.customWeatherCity)
-                        .textFieldStyle(.roundedBorder)
-                    Button("Use Current Location") {
-                        weatherMgr.requestLocationPermission()
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Calendar Access (EventKit)")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.white)
+                        Text(calendarMgr.permissionStatusLabel)
+                            .font(.system(size: 11.5))
+                            .foregroundStyle(.white.opacity(0.52))
                     }
+                    Spacer()
+                    Button(calendarMgr.hasCalendarAccess ? "Connected ✓" : "Grant Access") {
+                        Task { _ = await calendarMgr.requestAccess() }
+                    }
+                    .buttonStyle(OnboardingPillButtonStyle(isPrimary: !calendarMgr.hasCalendarAccess))
+                    .disabled(calendarMgr.hasCalendarAccess)
                 }
+                .padding(14)
+                .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
 
         default:
-            VStack(alignment: .leading, spacing: 12) {
-                Label("Ready for Takeoff", systemImage: "checkmark.seal.fill")
-                    .font(.system(size: 22, weight: .bold, design: .rounded))
+            VStack(alignment: .leading, spacing: 14) {
+                Text("All Set")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(.white)
 
-                Text("Configure how NotchFlow starts on your Mac. You can always access Settings from the NotchFlow menu bar icon or the gear button inside the expanded Dynamic Island.")
-                    .font(.system(size: 13.5))
-                    .foregroundStyle(.secondary)
+                Text("NotchFlow runs quietly in the background using 0% idle CPU. You can open Settings anytime from the menu bar icon.")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.65))
 
-                GroupBox {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Toggle("Launch NotchFlow automatically at login", isOn: $settings.launchAtLogin)
-                        Toggle("Show NotchFlow icon in the macOS menu bar", isOn: $settings.showMenuBarIcon)
-                        Toggle("Enable Duo Mode (Music + Calendar/Weather split view)", isOn: $settings.enableDuoMode)
-                    }
-                    .padding(8)
+                VStack(spacing: 10) {
+                    onboardingToggleCard("Launch NotchFlow at Login", isOn: $settings.launchAtLogin)
+                    onboardingToggleCard("Show NotchFlow icon in Menu Bar", isOn: $settings.showMenuBarIcon)
                 }
             }
         }
     }
 
-    private func featureBullet(icon: String, title: String, detail: String) -> some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: icon)
-                .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(accent)
-                .frame(width: 24, height: 24)
-                .background(accent.opacity(0.14), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+    private func featureRow(color: Color, icon: String, title: String, detail: String) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(color)
+                    .frame(width: 26, height: 26)
+                Image(systemName: icon)
+                    .font(.system(size: 12.5, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
 
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: .leading, spacing: 1.5) {
                 Text(title)
-                    .font(.system(size: 12.5, weight: .bold))
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.white)
                 Text(detail)
                     .font(.system(size: 11.5))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.white.opacity(0.55))
             }
         }
+    }
+
+    private func onboardingToggleCard(_ title: String, isOn: Binding<Bool>) -> some View {
+        HStack {
+            Text(title)
+                .font(.system(size: 13))
+                .foregroundStyle(.white.opacity(0.90))
+            Spacer()
+            Toggle("", isOn: isOn)
+                .labelsHidden()
+                .toggleStyle(.switch)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 9)
+        .background(Color.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
     private func finishOnboarding() {
         settings.hasCompletedOnboarding = true
         Task { await weatherMgr.refreshWeather(force: true) }
         onComplete()
+    }
+}
+
+private struct OnboardingPillButtonStyle: ButtonStyle {
+    let isPrimary: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 12.5, weight: .semibold))
+            .foregroundStyle(isPrimary ? .black : .white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 7)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(
+                        isPrimary
+                            ? Color.white.opacity(configuration.isPressed ? 0.82 : 0.96)
+                            : Color.white.opacity(configuration.isPressed ? 0.18 : 0.10)
+                    )
+            )
     }
 }

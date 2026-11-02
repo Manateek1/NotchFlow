@@ -4,11 +4,16 @@ import AppKit
 public struct ExpandedMusicPlayerView: View {
     @ObservedObject var media = MediaManager.shared
     @ObservedObject var volumeMgr = VolumeManager.shared
+    @ObservedObject var connectivityMgr = ConnectivityManager.shared
     @ObservedObject var settings = SettingsStore.shared
 
     @State private var isDraggingScrubber: Bool = false
+    @State private var isHoveringScrubber: Bool = false
+    @State private var isHoveringArtwork: Bool = false
     @State private var dragProgress: Double = 0.0
-    @State private var showVolumePopover: Bool = false
+    @State private var showVolumeBar: Bool = false
+    @State private var prevNudge: CGFloat = 0
+    @State private var nextNudge: CGFloat = 0
 
     public init() {}
 
@@ -24,104 +29,79 @@ public struct ExpandedMusicPlayerView: View {
     }
 
     public var body: some View {
-        VStack(spacing: 12) {
-            // Top Row: Artwork + Metadata + Live Waveform
-            HStack(alignment: .center, spacing: 14) {
+        VStack(spacing: 16) {
+            // 1. Track Header Row: Album Art + Title/Artist + iOS Waveform
+            HStack(alignment: .center, spacing: 16) {
                 if settings.showAlbumArtwork {
                     artworkView
                 }
 
-                VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
-                        Text(track.title)
-                            .font(.system(size: 14.5, weight: .bold, design: .rounded))
+                        Text(track.title.isEmpty ? "Not Playing" : track.title)
+                            .font(.system(size: 16, weight: .semibold))
                             .foregroundStyle(.white)
                             .lineLimit(1)
 
-                        if settings.showAudioFormatBadges && track.isExplicit {
+                        if track.isExplicit {
                             Text("E")
-                                .font(.system(size: 9, weight: .heavy, design: .rounded))
+                                .font(.system(size: 8.5, weight: .heavy))
                                 .foregroundStyle(.black)
-                                .padding(.horizontal, 4)
-                                .padding(.vertical, 1)
-                                .background(Color.white.opacity(0.85), in: RoundedRectangle(cornerRadius: 3))
+                                .padding(.horizontal, 3.5)
+                                .padding(.vertical, 0.5)
+                                .background(Color.white.opacity(0.55), in: RoundedRectangle(cornerRadius: 2.5))
                         }
                     }
 
-                    Text(track.artist.isEmpty ? track.sourceAppName : "\(track.artist)\(track.album.isEmpty ? "" : " — \(track.album)")")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.68))
+                    Text(track.artist.isEmpty ? track.sourceAppName : track.artist)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.48))
                         .lineLimit(1)
-
-                    if settings.showAudioFormatBadges {
-                        HStack(spacing: 6) {
-                            Button {
-                                media.openSourceApplication()
-                            } label: {
-                                HStack(spacing: 3.5) {
-                                    Image(systemName: track.sourceSymbolName)
-                                        .font(.system(size: 9.5, weight: .semibold))
-                                    Text(track.sourceAppName)
-                                        .font(.system(size: 9.5, weight: .semibold))
-                                }
-                                .foregroundStyle(activeAccent)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(activeAccent.opacity(0.15), in: Capsule())
-                            }
-                            .buttonStyle(.plain)
-
-                            if track.isLossless {
-                                badgePill(icon: "waveform.path", text: "Lossless")
-                            }
-                            if track.isDolbyAtmos {
-                                badgePill(icon: "hifispeaker.2.fill", text: "Dolby Atmos")
-                            }
-                            if track.isPodcast {
-                                badgePill(icon: "mic.fill", text: "Podcast")
-                            }
-                        }
-                        .padding(.top, 2)
-                    }
                 }
 
-                Spacer(minLength: 4)
+                Spacer(minLength: 8)
 
                 if settings.showWaveform {
                     WaveformVisualizerView(
                         isPlaying: track.isPlaying,
                         style: settings.waveformStyle,
                         accentColor: activeAccent,
-                        barCount: 6,
-                        height: 24
+                        secondaryColor: activeAccent.opacity(0.55),
+                        barCount: 5,
+                        height: 20
                     )
-                    .padding(.trailing, 4)
+                    .padding(.trailing, 2)
                 }
             }
 
-            // Middle Row: Interactive Progress Bar & Timestamps
-            VStack(spacing: 5) {
+            // 2. Inline Scrubber Row: Elapsed + Thumb-less Pill Progress + Remaining
+            HStack(alignment: .center, spacing: 12) {
+                Text(isDraggingScrubber ? NowPlayingTrack.formatTime(track.duration * dragProgress) : track.formattedElapsed)
+                    .font(.system(size: 12, weight: .semibold).monospacedDigit())
+                    .foregroundStyle(.white.opacity(0.44))
+                    .frame(width: 36, alignment: .leading)
+
                 GeometryReader { geo in
                     let currentProg = isDraggingScrubber ? dragProgress : track.progress
-                    let fillWidth = max(4, geo.size.width * CGFloat(currentProg))
+                    let barHeight: CGFloat = (isDraggingScrubber || isHoveringScrubber) ? 8.0 : 6.0
+                    let fillWidth = max(barHeight, geo.size.width * CGFloat(min(1, max(0, currentProg))))
 
                     ZStack(alignment: .leading) {
                         Capsule(style: .continuous)
-                            .fill(Color.white.opacity(0.14))
-                            .frame(height: isDraggingScrubber ? 7 : 5)
+                            .fill(Color.white.opacity(0.18))
+                            .frame(height: barHeight)
 
                         Capsule(style: .continuous)
-                            .fill(
-                                LinearGradient(
-                                    colors: [activeAccent, activeAccent.opacity(0.8)],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .frame(width: fillWidth, height: isDraggingScrubber ? 7 : 5)
+                            .fill(Color.white.opacity(isDraggingScrubber ? 1.0 : 0.85))
+                            .frame(width: fillWidth, height: barHeight)
                     }
                     .frame(maxHeight: .infinity)
+                    .animation(.spring(response: 0.24, dampingFraction: 0.78), value: isHoveringScrubber)
+                    .animation(.spring(response: 0.22, dampingFraction: 0.78), value: isDraggingScrubber)
                     .contentShape(Rectangle())
+                    .onHover { hovering in
+                        isHoveringScrubber = hovering
+                    }
                     .gesture(
                         DragGesture(minimumDistance: 0)
                             .onChanged { value in
@@ -136,171 +116,152 @@ public struct ExpandedMusicPlayerView: View {
                             }
                     )
                 }
-                .frame(height: 12)
+                .frame(height: 14)
 
-                HStack {
-                    Text(isDraggingScrubber ? NowPlayingTrack.formatTime(track.duration * dragProgress) : track.formattedElapsed)
-                        .font(.system(size: 10.5, weight: .medium, design: .monospaced))
-                        .foregroundStyle(.white.opacity(0.55))
-                    Spacer()
-                    Text(track.formattedRemaining)
-                        .font(.system(size: 10.5, weight: .medium, design: .monospaced))
-                        .foregroundStyle(.white.opacity(0.55))
-                }
+                Text(track.formattedRemaining)
+                    .font(.system(size: 12, weight: .semibold).monospacedDigit())
+                    .foregroundStyle(.white.opacity(0.44))
+                    .frame(width: 40, alignment: .trailing)
             }
 
-            // Bottom Row: Transport Controls + Output / Volume
+            // 3. Symmetrical 5-Button iOS Dynamic Island Transport Bar
             if settings.showPlaybackControls {
-                HStack(spacing: 18) {
-                    // Shuffle or Podcast Speed
-                    if track.isPodcast {
-                        Button {
-                            media.cyclePodcastSpeed()
-                        } label: {
-                            Text(String(format: "%.2gx", media.playbackSpeed))
-                                .font(.system(size: 10.5, weight: .bold, design: .rounded))
-                                .foregroundStyle(activeAccent)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 3)
-                                .background(Color.white.opacity(0.1), in: Capsule())
-                        }
-                        .buttonStyle(.plain)
-                        .help("Cycle Podcast Playback Speed")
-                    } else {
-                        Button {
-                            media.toggleShuffle()
-                        } label: {
-                            Image(systemName: "shuffle")
-                                .font(.system(size: 12.5, weight: .semibold))
-                                .foregroundStyle(track.isShuffling ? activeAccent : .white.opacity(0.55))
-                        }
-                        .buttonStyle(.plain)
-                        .help("Toggle Shuffle")
-                    }
+                HStack(alignment: .center, spacing: 0) {
+                    Spacer(minLength: 10)
 
-                    Spacer()
-
-                    // Previous
-                    Button {
-                        media.previousTrack()
-                    } label: {
-                        Image(systemName: "backward.fill")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(.white.opacity(0.9))
-                    }
-                    .buttonStyle(.plain)
-                    .help("Previous Track")
-
-                    // Play / Pause
-                    Button {
-                        media.togglePlayPause()
-                    } label: {
-                        ZStack {
-                            Circle()
-                                .fill(Color.white.opacity(0.16))
-                                .frame(width: 36, height: 36)
-                            Image(systemName: track.isPlaying ? "pause.fill" : "play.fill")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundStyle(.white)
-                                .offset(x: track.isPlaying ? 0 : 1)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .help(track.isPlaying ? "Pause" : "Play")
-
-                    // Next
-                    Button {
-                        media.nextTrack()
-                    } label: {
-                        Image(systemName: "forward.fill")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(.white.opacity(0.9))
-                    }
-                    .buttonStyle(.plain)
-                    .help("Next Track")
-
-                    Spacer()
-
-                    // Repeat
-                    Button {
-                        media.cycleRepeatMode()
-                    } label: {
-                        Image(systemName: track.repeatMode.symbolName)
-                            .font(.system(size: 12.5, weight: .semibold))
-                            .foregroundStyle(track.repeatMode != .off ? activeAccent : .white.opacity(0.55))
-                    }
-                    .buttonStyle(.plain)
-                    .help("Cycle Repeat Mode")
-
-                    // Like / Favorite
-                    Button {
+                    // 1. Star / Favorite
+                    TransportIconButton(
+                        symbol: track.isLiked ? "star.fill" : "star",
+                        size: 19,
+                        color: track.isLiked ? activeAccent : .white.opacity(0.44),
+                        helpText: "Favorite Track"
+                    ) {
                         media.toggleLike()
-                    } label: {
-                        Image(systemName: track.isLiked ? "heart.fill" : "heart")
-                            .font(.system(size: 12.5, weight: .semibold))
-                            .foregroundStyle(track.isLiked ? .pink : .white.opacity(0.55))
                     }
-                    .buttonStyle(.plain)
-                    .help("Favorite Track")
 
-                    // Inline Volume Toggle
-                    Button {
-                        withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
-                            showVolumePopover.toggle()
+                    Spacer()
+
+                    // 2. Previous Track
+                    TransportIconButton(
+                        symbol: "backward.fill",
+                        size: 21,
+                        color: .white,
+                        horizontalOffset: prevNudge,
+                        helpText: "Previous Track"
+                    ) {
+                        withAnimation(.spring(response: 0.22, dampingFraction: 0.55)) {
+                            prevNudge = -4
                         }
-                    } label: {
-                        Image(systemName: volumeMgr.outputDeviceSymbol)
-                            .font(.system(size: 12.5, weight: .semibold))
-                            .foregroundStyle(showVolumePopover ? activeAccent : .white.opacity(0.65))
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.14) {
+                            withAnimation(.spring(response: 0.28, dampingFraction: 0.7)) {
+                                prevNudge = 0
+                            }
+                        }
+                        media.previousTrack()
                     }
-                    .buttonStyle(.plain)
-                    .help("Toggle Output Volume Bar")
+
+                    Spacer()
+
+                    // 3. Play / Pause (Pure iOS Symbol — No Background Circle)
+                    TransportIconButton(
+                        symbol: track.isPlaying ? "pause.fill" : "play.fill",
+                        size: 28,
+                        color: .white,
+                        helpText: track.isPlaying ? "Pause" : "Play"
+                    ) {
+                        media.togglePlayPause()
+                    }
+
+                    Spacer()
+
+                    // 4. Next Track
+                    TransportIconButton(
+                        symbol: "forward.fill",
+                        size: 21,
+                        color: .white,
+                        horizontalOffset: nextNudge,
+                        helpText: "Next Track"
+                    ) {
+                        withAnimation(.spring(response: 0.22, dampingFraction: 0.55)) {
+                            nextNudge = 4
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.14) {
+                            withAnimation(.spring(response: 0.28, dampingFraction: 0.7)) {
+                                nextNudge = 0
+                            }
+                        }
+                        media.nextTrack()
+                    }
+
+                    Spacer()
+
+                    // 5. Audio Output / Device Route
+                    let outputSymbol: String = {
+                        guard let dev = connectivityMgr.primaryAudioDevice else { return "laptopcomputer" }
+                        if dev.name.localizedCaseInsensitiveContains("MacBook") || dev.name.localizedCaseInsensitiveContains("Speaker") {
+                            return "laptopcomputer"
+                        }
+                        return dev.symbolName
+                    }()
+                    TransportIconButton(
+                        symbol: outputSymbol,
+                        size: 19,
+                        color: showVolumeBar ? .white : .white.opacity(0.44),
+                        helpText: "Audio Output & Volume"
+                    ) {
+                        withAnimation(.spring(response: 0.30, dampingFraction: 0.80)) {
+                            showVolumeBar.toggle()
+                        }
+                    }
+
+                    Spacer(minLength: 10)
                 }
             }
 
-            if showVolumePopover {
-                HStack(spacing: 8) {
+            // Optional Sleek Inline Output Volume Pill Bar
+            if showVolumeBar {
+                HStack(spacing: 10) {
                     Button {
                         volumeMgr.toggleMute(triggerHUD: false)
                     } label: {
                         Image(systemName: volumeMgr.volumeSymbolName)
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(.white.opacity(0.75))
-                            .frame(width: 16)
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.65))
+                            .frame(width: 18)
                     }
                     .buttonStyle(.plain)
 
-                    Slider(
+                    TouchPillSlider(
                         value: Binding(
                             get: { volumeMgr.isMuted ? 0 : volumeMgr.volume },
                             set: { volumeMgr.setSystemVolume($0, triggerHUD: false) }
                         ),
-                        in: 0...1
+                        fillColor: .white,
+                        height: 6
                     )
-                    .tint(activeAccent)
-                    .controlSize(.mini)
 
-                    Text(volumeMgr.outputDeviceName)
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.6))
+                    Text(connectivityMgr.primaryAudioDevice?.name ?? volumeMgr.outputDeviceName)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.50))
                         .lineLimit(1)
+                        .frame(maxWidth: 110, alignment: .trailing)
                 }
                 .padding(.top, 2)
-                .transition(.opacity.combined(with: .move(edge: .bottom)))
+                .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
             }
         }
     }
 
     private var artworkView: some View {
-        let size: CGFloat = (settings.expandedPlayerLayout == .cinemaArtwork) ? 68 : 56
+        let size: CGFloat = (settings.expandedPlayerLayout == .cinemaArtwork) ? 68 : 62
         let dimmed = settings.dimArtworkOnPause && !track.isPlaying
 
         return ZStack {
             if settings.artworkGlowEffect {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(activeAccent.opacity(track.isPlaying ? 0.45 : 0.15))
+                    .fill(activeAccent.opacity(track.isPlaying ? 0.36 : 0.12))
                     .frame(width: size, height: size)
-                    .blur(radius: 10)
+                    .blur(radius: 12)
             }
 
             if let nsImg = track.artworkImage {
@@ -308,14 +269,19 @@ public struct ExpandedMusicPlayerView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .frame(width: size, height: size)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 13, style: .continuous)
+                            .strokeBorder(Color.white.opacity(0.10), lineWidth: 0.5)
+                    )
+                    .shadow(color: Color.black.opacity(0.45), radius: 8, y: 4)
                     .opacity(dimmed ? 0.65 : 1.0)
-                    .scaleEffect(dimmed ? 0.94 : 1.0)
+                    .scaleEffect(dimmed ? 0.88 : (isHoveringArtwork ? 1.04 : 1.0))
             } else {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
                     .fill(
                         LinearGradient(
-                            colors: [activeAccent.opacity(0.45), Color.indigo.opacity(0.35)],
+                            colors: [activeAccent.opacity(0.55), Color.white.opacity(0.12)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -323,27 +289,131 @@ public struct ExpandedMusicPlayerView: View {
                     .frame(width: size, height: size)
                     .overlay(
                         Image(systemName: "music.note")
-                            .font(.system(size: size * 0.42, weight: .semibold))
+                            .font(.system(size: size * 0.40, weight: .semibold))
                             .foregroundStyle(.white.opacity(0.85))
                     )
             }
         }
-        .animation(.spring(response: 0.32, dampingFraction: 0.78), value: track.isPlaying)
+        .animation(.spring(response: 0.34, dampingFraction: 0.74), value: track.isPlaying)
+        .animation(.spring(response: 0.26, dampingFraction: 0.72), value: isHoveringArtwork)
+        .onHover { hovering in
+            isHoveringArtwork = hovering
+        }
         .onTapGesture {
             media.openSourceApplication()
         }
     }
+}
 
-    private func badgePill(icon: String, text: String) -> some View {
-        HStack(spacing: 3) {
-            Image(systemName: icon)
-                .font(.system(size: 8.5, weight: .semibold))
-            Text(text)
-                .font(.system(size: 9, weight: .semibold))
+// MARK: - Reusable Tactile iOS Transport Button
+
+struct TransportIconButton: View {
+    let symbol: String
+    let size: CGFloat
+    let color: Color
+    var horizontalOffset: CGFloat = 0
+    let helpText: String
+    let action: () -> Void
+
+    @State private var isHovered: Bool = false
+    @State private var isPressed: Bool = false
+
+    var body: some View {
+        Button {
+            withAnimation(.spring(response: 0.18, dampingFraction: 0.58)) {
+                isPressed = true
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.11) {
+                withAnimation(.spring(response: 0.26, dampingFraction: 0.70)) {
+                    isPressed = false
+                }
+            }
+            action()
+        } label: {
+            Image(systemName: symbol)
+                .font(.system(size: size, weight: .bold))
+                .foregroundStyle(isHovered ? Color.white : color)
+                .contentTransition(.symbolEffect(.replace))
+                .frame(width: 44, height: 38)
+                .background(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(Color.white.opacity(isHovered ? 0.08 : 0.0))
+                )
+                .scaleEffect(isPressed ? 0.84 : (isHovered ? 1.06 : 1.0))
+                .offset(x: horizontalOffset)
         }
-        .foregroundStyle(.white.opacity(0.72))
-        .padding(.horizontal, 5.5)
-        .padding(.vertical, 2)
-        .background(Color.white.opacity(0.10), in: Capsule())
+        .buttonStyle(.plain)
+        .help(helpText)
+        .onHover { hovering in
+            withAnimation(.spring(response: 0.22, dampingFraction: 0.78)) {
+                isHovered = hovering
+            }
+        }
+    }
+}
+
+// MARK: - Reusable Thumb-less iOS Pill Slider
+
+public struct TouchPillSlider: View {
+    @Binding public var value: Double
+    public var range: ClosedRange<Double> = 0...1
+    public var fillColor: Color = .white
+    public var height: CGFloat = 6.5
+    public var glowEffect: Bool = false
+
+    @State private var isHovering: Bool = false
+    @State private var isDragging: Bool = false
+
+    public init(
+        value: Binding<Double>,
+        range: ClosedRange<Double> = 0...1,
+        fillColor: Color = .white,
+        height: CGFloat = 6.5,
+        glowEffect: Bool = false
+    ) {
+        self._value = value
+        self.range = range
+        self.fillColor = fillColor
+        self.height = height
+        self.glowEffect = glowEffect
+    }
+
+    public var body: some View {
+        GeometryReader { geo in
+            let span = max(0.0001, range.upperBound - range.lowerBound)
+            let normalized = min(1, max(0, (value - range.lowerBound) / span))
+            let activeH = (isHovering || isDragging) ? height + 2.0 : height
+            let fillW = max(activeH, geo.size.width * CGFloat(normalized))
+
+            ZStack(alignment: .leading) {
+                Capsule(style: .continuous)
+                    .fill(fillColor.opacity(0.20))
+                    .frame(height: activeH)
+
+                Capsule(style: .continuous)
+                    .fill(fillColor)
+                    .frame(width: fillW, height: activeH)
+                    .shadow(color: glowEffect ? fillColor.opacity(0.75) : .clear, radius: glowEffect ? 6 : 0)
+            }
+            .frame(maxHeight: .infinity)
+            .animation(.spring(response: 0.22, dampingFraction: 0.78), value: isHovering)
+            .animation(.spring(response: 0.20, dampingFraction: 0.78), value: isDragging)
+            .contentShape(Rectangle())
+            .onHover { hovering in
+                isHovering = hovering
+            }
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { gesture in
+                        isDragging = true
+                        let frac = min(1, max(0, Double(gesture.location.x / max(1, geo.size.width))))
+                        value = range.lowerBound + frac * span
+                    }
+                    .onEnded { _ in
+                        isDragging = false
+                    }
+            )
+        }
+        .frame(height: max(14, height + 6))
     }
 }
