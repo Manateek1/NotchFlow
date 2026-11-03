@@ -140,6 +140,32 @@ public struct SettingsView: View {
                     Spacer()
 
                     previewHeaderButton(for: selectedSection)
+
+                    // Master On / Off Power Switch Pill
+                    HStack(spacing: 7) {
+                        Circle()
+                            .fill(settings.isEnabled ? switchMint : Color.white.opacity(0.30))
+                            .frame(width: 6.5, height: 6.5)
+
+                        Text(settings.isEnabled ? "On" : "Off")
+                            .font(.system(size: 11.5, weight: .semibold))
+                            .foregroundStyle(.white.opacity(settings.isEnabled ? 0.92 : 0.50))
+
+                        Toggle("", isOn: Binding(
+                            get: { settings.isEnabled },
+                            set: { newValue in
+                                settings.isEnabled = newValue
+                                coordinator.recalculateRestingState()
+                            }
+                        ))
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .controlSize(.small)
+                    }
+                    .padding(.leading, 10)
+                    .padding(.trailing, 6)
+                    .padding(.vertical, 4)
+                    .background(Color.white.opacity(0.07), in: Capsule())
                 }
                 .padding(.horizontal, 20)
                 .frame(height: 48)

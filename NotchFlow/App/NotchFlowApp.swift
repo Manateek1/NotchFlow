@@ -20,6 +20,7 @@ public struct NotchFlowApp: App {
 @MainActor
 public final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
+    private var powerMenuItem: NSMenuItem?
     private var settingsWindow: NSWindow?
     private var onboardingWindow: NSWindow?
     private var cancellables = Set<AnyCancellable>()
@@ -66,11 +67,31 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    public func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag {
+            openSettingsWindow()
+        } else {
+            settingsWindow?.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        }
+        return true
+    }
+
     private func observeMenuBarPreference() {
         SettingsStore.shared.$showMenuBarIcon
             .receive(on: RunLoop.main)
             .sink { [weak self] show in
                 self?.statusItem?.isVisible = show
+            }
+            .store(in: &cancellables)
+
+        SettingsStore.shared.$isEnabled
+            .receive(on: RunLoop.main)
+            .sink { [weak self] enabled in
+                self?.powerMenuItem?.title = enabled ? "Turn NotchFlow Off" : "Turn NotchFlow On"
+                self?.powerMenuItem?.state = enabled ? .on : .off
+                self?.statusItem?.button?.alphaValue = enabled ? 1.0 : 0.45
+                IslandCoordinator.shared.recalculateRestingState()
             }
             .store(in: &cancellables)
     }
@@ -84,6 +105,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
                 ?? NSImage(systemSymbolName: "waveform", accessibilityDescription: "NotchFlow")
             img?.isTemplate = true
             button.image = img
+            button.alphaValue = SettingsStore.shared.isEnabled ? 1.0 : 0.45
             button.toolTip = "NotchFlow — Dynamic Island for macOS"
         }
 
@@ -92,6 +114,17 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         let headerItem = NSMenuItem(title: "NotchFlow — Dynamic Island", action: nil, keyEquivalent: "")
         headerItem.isEnabled = false
         menu.addItem(headerItem)
+
+        let powerItem = NSMenuItem(
+            title: SettingsStore.shared.isEnabled ? "Turn NotchFlow Off" : "Turn NotchFlow On",
+            action: #selector(menuTogglePower),
+            keyEquivalent: "t"
+        )
+        powerItem.target = self
+        powerItem.state = SettingsStore.shared.isEnabled ? .on : .off
+        menu.addItem(powerItem)
+        self.powerMenuItem = powerItem
+
         menu.addItem(.separator())
 
         let toggleExpandItem = NSMenuItem(title: "Expand / Collapse Island", action: #selector(menuToggleExpand), keyEquivalent: "e")
@@ -148,6 +181,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
 
         item.menu = menu
         self.statusItem = item
+    }
+
+    @objc private func menuTogglePower() {
+        SettingsStore.shared.isEnabled.toggle()
+        IslandCoordinator.shared.recalculateRestingState()
     }
 
     @objc private func menuToggleExpand() {
